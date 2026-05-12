@@ -369,14 +369,17 @@ end
 
 -- *** Menu patch ***
 
-local egoMenuMapCreateContextFrame = nil
-local egoMenuMapOnUpdate = nil
+local egoMenuMapCreateContextFrame = {}
+local egoMenuMapOnUpdate = {}
 
-local function patchMenuMap()
-  local menu = cmAPI.menuMap
-
+local function patchMenu(menuToPatch)
+  local menu = menuToPatch
+  if not menu then
+    debug("could not find menu to patch: " .. tostring(menuToPatch))
+    return
+  end
   -- Wrap onUpdate: fire pending 1-frame callbacks before the original handler
-  egoMenuMapOnUpdate = menu.onUpdate
+  egoMenuMapOnUpdate[menu.name] = menu.onUpdate
   menu.onUpdate = function(...)
     if #cmAPI.pendingCallbacks > 0 then
       local cbs        = cmAPI.pendingCallbacks
@@ -388,11 +391,11 @@ local function patchMenuMap()
         end
       end
     end
-    egoMenuMapOnUpdate(...)
+    egoMenuMapOnUpdate[menu.name](...)
   end
 
   -- Intercept createContextFrame for MD signal + 2-frame delay
-  egoMenuMapCreateContextFrame = menu.createContextFrame
+  egoMenuMapCreateContextFrame[menu.name] = menu.createContextFrame
   menu.createContextFrame = function(...)
     local args = { ... }
 
@@ -424,7 +427,7 @@ local function patchMenuMap()
         cmAPI.delaying = false
         trace("2-frame delay over, calling real createContextFrame and injecting MD entries")
         readMdEntries()
-        egoMenuMapCreateContextFrame(tableUnpack(cmAPI.pendingArgs))
+        egoMenuMapCreateContextFrame[menu.name](tableUnpack(cmAPI.pendingArgs))
       end)
     end)
   end
@@ -438,7 +441,7 @@ local function Init()
   local Lib = require("extensions.sn_mod_support_apis.ui.Library")
   cmAPI.menuMap = Lib.Get_Egosoft_Menu("MapMenu")
 
-  patchMenuMap()
+  patchMenu(cmAPI.menuMap)
 
   local menuMap = cmAPI.menuMap
   if type(menuMap.registerCallback) == "function" then

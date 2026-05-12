@@ -43,8 +43,9 @@ local cmAPI = {
   pendingArgs = nil,
 
   -- set in Init()
-  playerId = nil,
-  menuMap  = nil,
+  playerId    = nil,
+  menuMap     = nil,   -- MapMenu reference (kept for backward compat)
+  activeMenu  = nil,   -- whichever menu last opened a context frame
 }
 
 -- *** Debug helpers ***
@@ -189,25 +190,28 @@ end
 
 -- *** Navigation ***
 
+function cmAPI.getContextMenuData(menu)
+  local menu = menu or cmAPI.activeMenu
+  if not menu then return nil end
+  if menu.name == "PlayerInfoMenu" then
+    -- Custom logic for PlayerInfoMenu personnel mode
+    return cmAPI.pendingArgs and cmAPI.pendingArgs[1] or {}
+  end
+  return menu.contextMenuData
+end
+
 function cmAPI.push(modeId)
-  local menu = cmAPI.menuMap
+  local menu = cmAPI.activeMenu
   if not menu then return end
   table.insert(cmAPI.navStack, {
     mode = menu.contextMenuMode,
-    data = menu.contextMenuData,
   })
-  local saved = cmAPI.navStack[#cmAPI.navStack].data
   menu.contextMenuMode = modeId
-  menu.contextMenuData = {
-    xoffset = saved.xoffset,
-    yoffset = saved.yoffset,
-    width   = saved.width,
-  }
-  menu.createContextFrame()
+  menu.createContextFrame(tableUnpack(cmAPI.pendingArgs))
 end
 
 function cmAPI.goBack()
-  local menu = cmAPI.menuMap
+  local menu = cmAPI.activeMenu
   if not menu then return end
   if #cmAPI.navStack == 0 then
     menu.closeContextMenu()
@@ -215,7 +219,6 @@ function cmAPI.goBack()
   end
   local prev = table.remove(cmAPI.navStack)
   menu.contextMenuMode = prev.mode
-  menu.contextMenuData = prev.data
   menu.createContextFrame()
 end
 
@@ -234,6 +237,15 @@ end
 -- *** UIX createContextFrame_on_end / refreshContextFrame_on_end callback ***
 
 local function onCreateContextFrame(contextFrame, contextMenuData, contextMenuMode)
+  debug("onCreateContextFrame: menu = " .. tostring(contextFrame.menu.name) .. "mode = " .. tostring(contextMenuMode) .. ", data = " .. tostring(contextMenuData))
+  local menu = contextFrame.menu
+  if not menu then
+    debug("contextFrame missing menu reference")
+    return
+  end
+
+  contextMenuData = cmAPI.getContextMenuData(menu)
+
   local isCustom = cmAPI.customModes[contextMenuMode] ~= nil
 
   -- Any fresh non-custom open clears stale nav stack (e.g. after ESC)
@@ -319,7 +331,7 @@ local function onCreateContextFrame(contextFrame, contextMenuData, contextMenuMo
             onClick = function()
               AddUITriggeredEvent("Context_Menu_API", "action", id)
               if not keepOpen then
-                cmAPI.menuMap.closeContextMenu()
+                cmAPI.activeMenu.closeContextMenu()
               end
             end
           end
@@ -397,6 +409,7 @@ local function patchMenu(menuToPatch)
   -- Intercept createContextFrame for MD signal + 2-frame delay
   egoMenuMapCreateContextFrame[menu.name] = menu.createContextFrame
   menu.createContextFrame = function(...)
+    cmAPI.activeMenu = menu
     local args = { ... }
 
     -- If already waiting, just update the args (e.g. rapid re-open)
@@ -410,13 +423,14 @@ local function patchMenu(menuToPatch)
     cmAPI.tempMdEntries = {}
     SetNPCBlackboard(cmAPI.playerId, "$cma_register_modes", nil)
     trace("createContextFrame intercepted, mode = " .. tostring(menu.contextMenuMode) .. " - firing onOpen event for MD")
-
-    -- Signal MD: includes menu.name so MD conditions can distinguish menus
-    AddUITriggeredEvent("Context_Menu_API", "onOpen", {
+    local param = {
       menuName = menu.name,
       mode     = menu.contextMenuMode or "",
-      data     = sanitizeForMD(menu.contextMenuData),
-    })
+      data     = sanitizeForMD(cmAPI.getContextMenuData(menu) or {}),
+    }
+
+    -- Signal MD: includes menu.name so MD conditions can distinguish menus
+    AddUITriggeredEvent("Context_Menu_API", "onOpen", param)
 
     -- Delay 2 frames. AddUITriggeredEvent queues the MD event for the MD
     -- update that runs AFTER the current Lua onUpdate completes. So after
@@ -439,16 +453,25 @@ local function Init()
   cmAPI.playerId = ConvertStringTo64Bit(tostring(C.GetPlayerID()))
 
   local Lib = require("extensions.sn_mod_support_apis.ui.Library")
+
+  -- Keep menuMap as the MapMenu reference for backward compatibility
   cmAPI.menuMap = Lib.Get_Egosoft_Menu("MapMenu")
 
-  patchMenu(cmAPI.menuMap)
-
-  local menuMap = cmAPI.menuMap
-  if type(menuMap.registerCallback) == "function" then
-    menuMap.registerCallback("createContextFrame_on_end", onCreateContextFrame)
-    menuMap.registerCallback("refreshContextFrame_on_end", onCreateContextFrame)
-  else
-    DebugError("CMA: kuertee UI Extensions missing — UIX callbacks not registered")
+  -- Patch all menus that support context frames
+  local menuNames = { "MapMenu", "DiplomacyMenu", "PlayerInfoMenu" }
+  for _, mname in ipairs(menuNames) do
+    local m = Lib.Get_Egosoft_Menu(mname)
+    if m then
+      patchMenu(m)
+      if type(m.registerCallback) == "function" then
+        m.registerCallback("createContextFrame_on_end", onCreateContextFrame)
+        m.registerCallback("refreshContextFrame_on_end", onCreateContextFrame)
+      else
+        DebugError("CMA: kuertee UI Extensions missing for " .. mname .. " — UIX callbacks not registered")
+      end
+    else
+      debug("menu not found (may not be loaded yet): " .. mname)
+    end
   end
 
   -- MD calls raise_lua_event("Context_Menu_API.RegisterMode") when a consumer

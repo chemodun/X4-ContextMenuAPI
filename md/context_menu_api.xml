@@ -8,10 +8,7 @@
 
     CONSUMER FLOW
     =============
-    1. Listen to Reloaded for one-time mode registration.
-       Signal Register_Custom_Mode for any MD-owned blank-frame modes.
-
-    2. Listen to Get_Actions. event.param fields:
+    1. Listen to Get_Actions. event.param fields:
          $menuName  - "MapMenu"
          $mode      - contextMenuMode string, e.g. "info_context"
          $entity    - MD component (pilot/manager) or null
@@ -45,13 +42,6 @@
                       auto-set to false when $callback is omitted
          $keepOpen  - (optional) if true the context menu stays open after click;
                       default: menu is closed on click
-
-    REGISTER_CUSTOM_MODE
-    ====================
-    Tells Lua to allocate a blank context frame for $modeId.
-    A "back" button is auto-injected by the API after any leading "header" entry.
-    Must be called during the Reloaded handler.
-    param: table[$modeId = 'yourmod_mode_name']
     -->
   <cues>
 
@@ -117,8 +107,7 @@
 
     <!--
       Signals when the Lua side (re)initialises.
-      Consumers should listen here to call Register_Custom_Mode and any
-      other one-time setup work.
+      Consumers can listen here for any one-time setup work.
     -->
     <cue name="Reloaded" instantiate="true">
       <conditions>
@@ -284,37 +273,6 @@
         <debug_text text="'[CMA] Add_Action type=%1 id=%2 active=%3 text=%4'.
                          [$entry.$type, @$entry.$id, @$entry.$active, $entry.$text]"
           chance="Globals.$DebugChance" />
-      </actions>
-    </cue>
-
-
-    <!-- ================================================================== -->
-    <!--  Public: Register_Custom_Mode                                        -->
-    <!-- ================================================================== -->
-
-    <!--
-      Tells Lua to allocate a blank context frame for $modeId.
-      Entries for that mode are supplied via Get_Actions / Add_Action.
-      A "back" button is auto-injected by the API after any leading "header" entry.
-      Must be called during the Reloaded handler.
-      param: table[$modeId = 'yourmod_mode_name']
-    -->
-    <cue name="Register_Custom_Mode" instantiate="true" namespace="this">
-      <conditions>
-        <event_cue_signalled />
-      </conditions>
-      <actions>
-        <set_value name="$modeId" exact="event.param.$modeId" />
-        <do_if value="$modeId != null">
-          <!-- Write to blackboard and raise a Lua event so Lua registers it immediately -->
-          <do_if value="@player.entity.$cma_register_modes == null">
-            <set_value name="player.entity.$cma_register_modes" exact="[]" />
-          </do_if>
-          <append_to_list name="player.entity.$cma_register_modes" exact="$modeId" />
-          <raise_lua_event name="'Context_Menu_API.RegisterMode'" />
-          <debug_text text="'[CMA] Register_Custom_Mode modeId=%1'.[$modeId]"
-            chance="Globals.$DebugChance" />
-        </do_if>
       </actions>
     </cue>
 

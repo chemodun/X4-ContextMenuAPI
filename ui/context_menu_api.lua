@@ -147,6 +147,10 @@ local function makeBuilder(addRow, addEmptyRow)
   end
 
   function b.subMenuButton(text, modeId, opts)
+    -- auto-register the target as a custom mode if not already known
+    if not cmAPI.customModes[modeId] then
+      cmAPI.customModes[modeId] = function() end
+    end
     local o = {
       id            = modeId,
       icon          = opts and opts.icon,
@@ -219,7 +223,7 @@ function cmAPI.goBack()
   end
   local prev = table.remove(cmAPI.navStack)
   menu.contextMenuMode = prev.mode
-  menu.createContextFrame()
+  menu.createContextFrame(tableUnpack(cmAPI.pendingArgs))
 end
 
 -- *** Find the vanilla 1-column table inside a contextFrame ***
@@ -237,7 +241,7 @@ end
 -- *** UIX createContextFrame_on_end / refreshContextFrame_on_end callback ***
 
 local function onCreateContextFrame(contextFrame, contextMenuData, contextMenuMode)
-  debug("onCreateContextFrame: menu = " .. tostring(contextFrame.menu.name) .. "mode = " .. tostring(contextMenuMode) .. ", data = " .. tostring(contextMenuData))
+  debug("onCreateContextFrame: menu = " .. tostring(contextFrame.menu.name))
   local menu = contextFrame.menu
   if not menu then
     debug("contextFrame missing menu reference")
@@ -245,6 +249,7 @@ local function onCreateContextFrame(contextFrame, contextMenuData, contextMenuMo
   end
 
   contextMenuData = cmAPI.getContextMenuData(menu)
+  trace("onCreateContextFrame: menu = " .. tostring(contextFrame.menu.name) .. "mode = " .. tostring(contextMenuMode) .. ", data = " .. tostring(contextMenuData))
 
   local isCustom = cmAPI.customModes[contextMenuMode] ~= nil
 
@@ -275,19 +280,23 @@ local function onCreateContextFrame(contextFrame, contextMenuData, contextMenuMo
   -- 2. Build a custom mode (blank frame — no vanilla table exists)
   if isCustom then
     local buildFn = cmAPI.customModes[contextMenuMode]
-    local width   = (contextMenuData and contextMenuData.width) or Helper.scaleX(200)
-    local ftable  = contextFrame:addTable(1, {
-      tabOrder                 = 1,
-      x                        = Helper.borderSize,
-      y                        = Helper.borderSize,
-      width                    = width - 2 * Helper.borderSize,
-      defaultInteractiveObject = true,
-    })
-    ftable:setColWidthPercent(1, 100)
-    local builder = makeTableBuilder(ftable)
-    local ok, err = pcall(buildFn, builder, contextMenuData)
-    if not ok then
-      debug("error in custom mode '" .. tostring(contextMenuMode) .. "': " .. tostring(err))
+    local menuTable = findVanillaTable(contextFrame)
+    if menuTable then
+    else
+      local width   = contextFrame.properties.width
+      menuTable  = contextFrame:addTable(1, {
+        tabOrder                 = 1,
+        x                        = Helper.borderSize,
+        y                        = Helper.borderSize,
+        width                    = width - 2 * Helper.borderSize,
+        defaultInteractiveObject = true,
+      })
+      menuTable:setColWidthPercent(1, 100)
+      local builder = makeTableBuilder(menuTable)
+      local ok, err = pcall(buildFn, builder, contextMenuData)
+      if not ok then
+        debug("error in custom mode '" .. tostring(contextMenuMode) .. "': " .. tostring(err))
+      end
     end
   end
 
@@ -474,27 +483,17 @@ local function Init()
     end
   end
 
-  -- MD calls raise_lua_event("Context_Menu_API.RegisterMode") when a consumer
-  -- registers an MD-owned custom mode during the Reloaded handler.
-  -- We register an empty builder so Lua creates a blank frame for that mode;
-  -- all entries come from MD via Get_Actions / Add_Action.
-  RegisterEvent("Context_Menu_API.RegisterMode", function()
-    local modes = GetNPCBlackboard(cmAPI.playerId, "$cma_register_modes")
-    SetNPCBlackboard(cmAPI.playerId, "$cma_register_modes", nil)
-    if type(modes) == "table" then
-      for _, modeId in ipairs(modes) do
-        if not cmAPI.customModes[modeId] then
-          -- empty builder: blank frame, MD entries injected as step 3
-          cmAPI.customModes[modeId] = function() end
-        end
-      end
-    end
-  end)
+  -- Read debug level directly from the saved config on startup
+  local savedConfig = GetNPCBlackboard(cmAPI.playerId, "$contextMenuAPIConfig")
+  if type(savedConfig) == "table" and savedConfig.debugMode ~= nil then
+    debugLevel = savedConfig.debugMode
+  end
 
   RegisterEvent("Context_Menu_API.ConfigChanged", function(_, param)
-    if param == nil then return end
-    if param.debugMode ~= nil then
-      debugLevel = param.debugMode
+    -- Read debug level directly from the saved config on startup
+    local savedConfig = GetNPCBlackboard(cmAPI.playerId, "$contextMenuAPIConfig")
+    if type(savedConfig) == "table" and savedConfig.debugMode ~= nil then
+      debugLevel = savedConfig.debugMode
       debug("debug mode set to: " .. tostring(debugLevel))
     end
   end)

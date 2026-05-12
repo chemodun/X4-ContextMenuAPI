@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English -->
+<diff>
+    <add sel="/language">
+        <page id="1972092426" title="Context Menu API" descr="" voice="no">
+            <!-- mod identity -->
+            <t id="1">Context Menu API</t>
+            <t id="2">Provides an MD-level API for extending the map context menu.</t>
+            <!-- settings labels (90000+) -->
+            <t id="90000">Debug</t>
+            <t id="90010">Debug Level</t>
+            <t id="90012">Debug</t>
+            <t id="90013">Trace</t>
+        </page>
+    </add>
+</diff>

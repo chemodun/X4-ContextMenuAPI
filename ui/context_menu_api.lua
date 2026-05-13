@@ -27,7 +27,7 @@ local cmAPI = {
   pendingCallbacks = {},
 
   -- registered entries for vanilla modes  { [modeString] = { {filter, build}, ... } }
-  vanillaEntries = {},
+  luaEntries = {},
 
   -- registered custom modes (blank frame)  { [modeId] = buildFn(builder, data) }
   customModes = {},
@@ -259,7 +259,7 @@ local function onCreateContextFrame(contextFrame, contextMenuData, contextMenuMo
   end
 
   -- 1. Append Lua-registered entries for vanilla modes
-  local entries = cmAPI.vanillaEntries[contextMenuMode]
+  local entries = cmAPI.luaEntries[contextMenuMode]
   if entries then
     local menuTable = findVanillaTable(contextFrame)
     if menuTable then

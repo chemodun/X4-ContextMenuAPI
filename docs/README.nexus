@@ -5,7 +5,8 @@ sub-menus inside map context frames (the panel that appears when you
 right-click a ship, station, etc. on the map).
 
 [b]Dependencies (required):[/b]
-[list][*] kuertee UI Extensions and HUD
+[list]
+[*] kuertee UI Extensions and HUD
 [*] SirNukes Mod Support APIs
 [/list]
 [hr]
@@ -38,7 +39,7 @@ Two integration paths exist, both with equivalent capabilities:
 [list]
 [*] [b]$menuName[/b] [i](string)[/i] — source menu ([b]"MapMenu"[/b])
 [*] [b]$mode[/b] [i](string)[/i] — context frame mode, e.g. [b]"info_context"[/b], [b]"trade"[/b] (see Vanilla context menu modes below)
-[*] [b]$data[/b] [i](table)[/i] — mode-specific data (e.g. selected entity); structure varies by mode and may be [b]null[/b] for some modes
+[*] Additional mode-specific string fields (e.g. [b]$component[/b], [b]$entity[/b], [b]$person[/b], [b]$inv_ware[/b], [b]$weaponmacro[/b], ...) — see per-mode docs below
 [/list]
 [size=3][u][i][b]Add_Action[/b] — entry fields[/i][/u][/size]
 [list]
@@ -62,7 +63,7 @@ The callback cue receives all original [b]Get_Actions[/b] fields, i.e.:
 [list]
 [*] [b]$menuName[/b] [i](string)[/i] — source menu ([b]"MapMenu"[/b])
 [*] [b]$mode[/b] [i](string)[/i] — context frame mode, e.g. [b]"info_context"[/b], [b]"trade"[/b] (see Vanilla context menu modes below)
-[*] [b]$data[/b] [i](table)[/i] — mode-specific data (e.g. selected entity); structure varies by mode and may be [b]null[/b] for some modes
+[*] Additional mode-specific string fields — same as in [b]Get_Actions[/b]
 [/list]
 [b]plus[/b]:
 [list]
@@ -149,7 +150,7 @@ Note: Do NOT add a [b]back[/b] entry manually — the API inserts it automatical
 
 [size=3][u][b]Lua API[/b][/u][/size]
 
-[size=3][u][i]Flow[/i][/u][/size]
+[size=3][u][i]Flow (Lua)[/i][/u][/size]
 
 [code]
 [list=1][*] At init time, call  cmAPI.registerLuaCallback(fn)
@@ -169,14 +170,15 @@ end)
 [list]
 [*] [b]menuName[/b] [i](string)[/i] — source menu name, e.g. [b]"MapMenu"[/b]
 [*] [b]mode[/b] [i](string)[/i] — context frame mode (same values as MD [b]$mode[/b])
-[*] [b]data[/b] [i](table or nil)[/i] — mode-specific data (same values as MD [b]$data[/b])
+[*] [b]data[/b] [i](table or nil)[/i] — raw context data table; fields mirror the MD param fields but as Lua values ([b]data.component[/b] and [b]data.entity[/b] are uint64 cdata; [b]data.person[/b] is the raw NPCSeed cdata, not yet resolved to an entity)
 [/list]
 The callback is called for [b]every[/b] whitelisted open across all supported menus. Filter by [b]menuName[/b] and [b]mode[/b] inside your callback as needed.
 
 [size=3][u][i]Entry table fields[/i][/u][/size]
 
 Entry tables mirror the MD [b]Add_Action[/b] fields, with two differences:
-[list][*] Field names are plain Lua strings (no [b]$[/b] prefix)
+[list]
+[*] Field names are plain Lua strings (no [b]$[/b] prefix)
 [*] Use [b]onClick[/b] instead of [b]callback[/b] + [b]echo[/b]
 [*] [b]type[/b] [i](string)[/i] — [b]"menuItem"[/b] (default), [b]"subMenu"[/b], [b]"separator"[/b], [b]"header"[/b]
 [*] [b]id[/b] [i](string)[/i] — [b]required[/b] for [b]menuItem[/b] and [b]subMenu[/b]; entries without [b]id[/b] are silently skipped
@@ -193,7 +195,7 @@ Entry tables mirror the MD [b]Add_Action[/b] fields, with two differences:
 [/list]
 [quote][b]Note:[/b] [b]onClick[/b] closures already capture any context the caller needs. There is no [b]echo[/b] field — closures are the Lua-native equivalent.[/quote]
 
-[size=3][u][i]Minimal example — append to an existing mode[/i][/u][/size]
+[size=3][u][i]Minimal example (Lua) — append to an existing mode[/i][/u][/size]
 
 [code]
 local cmAPI = require("extensions.context_menu_api.ui.context_menu_api")
@@ -265,15 +267,16 @@ These modes use a single-column frame and are whitelisted in the API. The [b]Get
 [size=3][u]MapMenu[/u][/size]
 
 [b][b]info_context[/b][/b] — the most useful entry point. Opens when the player right-clicks a crew member, pilot, manager, or ship trader in the info panel.
-[b]$data[/b] fields:
-[list][*] [b]$component[/b] [i](string)[/i] — UniverseID of the controllable (ship or station) as decimal string
-[*] [b]$entity[/b] [i](string)[/i] — UniverseID of the pilot or manager NPC; null if not applicable
-[*] [b]$person[/b] [i](string)[/i] — NPCSeed of the crew NPC (uint64 decimal string); null if not applicable
-[*] [b]$instance[/b] [i](string)[/i] — [b]"left"[/b] or [b]"right"[/b] for dual-panel frames; null otherwise
-[*] [b]$inv_ware[/b] [i](string)[/i] — ware macro string when an inventory item row was clicked; null otherwise
-[*] [b]$weaponmacro[/b] [i](string)[/i] — weapon macro string when a weapon row was clicked; null otherwise
-[*] [b]$equipmentmacro[/b] [i](string)[/i] — equipment/deploy macro string when an equipment row was clicked; null otherwise
-[*] [b]$software[/b] [i](string)[/i] — software macro string when a software row was clicked; null otherwise
+[b]event.param[/b] fields:
+[list]
+[*] [b]$component[/b] [i](component or null)[/i] — controllable (ship or station) as MD component reference
+[*] [b]$entity[/b] [i](component or null)[/i] — pilot or manager NPC as MD component reference; null if not applicable
+[*] [b]$person[/b] [i](npctemplateentry or null)[/i] — crew NPC template entry (has [b].name[/b], [b].role.name[/b], etc.); null if not applicable
+[*] [b]$instance[/b] [i](string or null)[/i] — [b]"left"[/b] or [b]"right"[/b] for dual-panel frames; null otherwise
+[*] [b]$inv_ware[/b] [i](string or null)[/i] — ware macro string when an inventory item row was clicked
+[*] [b]$weaponmacro[/b] [i](string or null)[/i] — weapon macro string when a weapon row was clicked
+[*] [b]$equipmentmacro[/b] [i](string or null)[/i] — equipment/deploy macro string when an equipment row was clicked
+[*] [b]$software[/b] [i](string or null)[/i] — software macro string when a software row was clicked
 [/list]
 [size=3][u]PlayerInfoMenu[/u][/size]
 
@@ -372,4 +375,4 @@ These modes are not in the whitelist. No [b]Get_Actions[/b] event is fired; the 
 
 [quote][b]Note:[/b] Venture modes ([b]venturecontactcontext[/b], [b]venturefriendlist[/b], [b]venturereport[/b]) are not accessible when the game is modded.[/quote]
 
-
+[hr]

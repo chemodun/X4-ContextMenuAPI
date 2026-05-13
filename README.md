@@ -38,7 +38,7 @@ Two integration paths exist, both with equivalent capabilities:
 
 - `$menuName` *(string)* — source menu (`"MapMenu"`)
 - `$mode` *(string)* — context frame mode, e.g. `"info_context"`, `"trade"` (see Vanilla context menu modes below)
-- `$data` *(table)* — mode-specific data (e.g. selected entity); structure varies by mode and may be `nil` for some modes
+- `$data` *(table)* — mode-specific data (e.g. selected entity); structure varies by mode and may be `null` for some modes
 
 ### `Add_Action` — entry fields
 
@@ -58,10 +58,16 @@ Two integration paths exist, both with equivalent capabilities:
 
 ### Callback `event.param` fields
 
-The callback cue receives all original `Get_Actions` fields **plus**:
+The callback cue receives all original `Get_Actions` fields, i.e.:
+
+- `$menuName` *(string)* — source menu (`"MapMenu"`)
+- `$mode` *(string)* — context frame mode, e.g. `"info_context"`, `"trade"` (see Vanilla context menu modes below)
+- `$data` *(table)* — mode-specific data (e.g. selected entity); structure varies by mode and may be `null` for some modes
+
+**plus**:
 
 - `$id` — the action ID that was clicked
-- `$echo` — the value of `$echo` passed to `Add_Action` (if any)
+- `$echo` — the value of `$echo` passed to `Add_Action` (if any) or `null`.
 
 ### Minimal example — append to an existing mode
 
@@ -154,13 +160,13 @@ These modes use a single-column frame and are whitelisted in the API. The `Get_A
 **`info_context`** — the most useful entry point. Opens when the player right-clicks a crew member, pilot, manager, or ship trader in the info panel.
 `$data` fields:
 - `$component` *(string)* — UniverseID of the controllable (ship or station) as decimal string
-- `$entity` *(string)* — UniverseID of the pilot or manager NPC; nil if not applicable
-- `$person` *(string)* — NPCSeed of the crew NPC (uint64 decimal string); nil if not applicable
-- `$instance` *(string)* — `"left"` or `"right"` for dual-panel frames; nil otherwise
-- `$inv_ware` *(string)* — ware macro string when an inventory item row was clicked; nil otherwise
-- `$weaponmacro` *(string)* — weapon macro string when a weapon row was clicked; nil otherwise
-- `$equipmentmacro` *(string)* — equipment/deploy macro string when an equipment row was clicked; nil otherwise
-- `$software` *(string)* — software macro string when a software row was clicked; nil otherwise
+- `$entity` *(string)* — UniverseID of the pilot or manager NPC; null if not applicable
+- `$person` *(string)* — NPCSeed of the crew NPC (uint64 decimal string); null if not applicable
+- `$instance` *(string)* — `"left"` or `"right"` for dual-panel frames; null otherwise
+- `$inv_ware` *(string)* — ware macro string when an inventory item row was clicked; null otherwise
+- `$weaponmacro` *(string)* — weapon macro string when a weapon row was clicked; null otherwise
+- `$equipmentmacro` *(string)* — equipment/deploy macro string when an equipment row was clicked; null otherwise
+- `$software` *(string)* — software macro string when a software row was clicked; null otherwise
 
 #### PlayerInfoMenu
 

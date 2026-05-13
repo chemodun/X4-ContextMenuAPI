@@ -601,7 +601,40 @@ local function patchMenu(menuToPatch)
         cmAPI.delaying = false
         trace("2-frame delay over, calling real createContextFrame and injecting MD entries")
         readMdEntries()
+        -- Save the current mouseOutBox so we can expand the new (possibly smaller)
+        -- box to the union after the real call, preventing premature menu closure.
+        local prevMouseOutBox = menu.mouseOutBox
         egoMenuMapCreateContextFrame[menu.name](tableUnpack(cmAPI.pendingArgs))
+
+        -- Adjust the new mouseOutBox if it's smaller than the context frame height,
+        -- to prevent premature closure when navigating into a taller sub-menu.
+        if menu.mouseOutBox then
+          local config = menu.uix_getConfig()
+          if config and config.mouseOutRange then
+            local calculatedHeight = (menu.mouseOutBox.y1 - menu.mouseOutBox.y2) - 2 * config.mouseOutRange
+            local height = menu.contextFrame:getUsedHeight()
+            if calculatedHeight < height then
+              trace("calculated mouseOutBox height " .. tostring(calculatedHeight) .. " is smaller than context frame height " .. tostring(height) .. " - expanding mouseOutBox")
+              menu.mouseOutBox.y1 = 0 - menu.contextFrame.properties.y + Helper.viewHeight / 2 + config.mouseOutRange
+              menu.mouseOutBox.y2 = 0 - menu.contextFrame.properties.y + Helper.viewHeight / 2 - height - config.mouseOutRange
+            end
+          end
+        end
+        -- Expand the new mouseOutBox to the union with the previous level's box.
+        -- When sub-menu navigation produces a smaller frame, the cursor can fall
+        -- outside the freshly-computed box and trigger immediate closure.  Taking
+        -- the union ensures the safe zone never shrinks during a menu session.
+        if prevMouseOutBox and menu.mouseOutBox then
+          local old = prevMouseOutBox
+          local new = menu.mouseOutBox
+          menu.mouseOutBox = {
+            x1 = math.min(old.x1, new.x1),
+            x2 = math.max(old.x2, new.x2),
+            y1 = math.max(old.y1, new.y1),
+            y2 = math.min(old.y2, new.y2),
+          }
+          trace("mouseOutBox expanded to union: x1=" .. menu.mouseOutBox.x1 .. " x2=" .. menu.mouseOutBox.x2 .. " y1=" .. menu.mouseOutBox.y1 .. " y2=" .. menu.mouseOutBox.y2)
+        end
       end)
     end)
   end

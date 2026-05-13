@@ -19,11 +19,11 @@ same MD tick / Lua call) by appending entries via the builder API.
 Two integration paths exist, both with equivalent capabilities:
 [list]
 [*] [b]MD API[/b] — for Mission Director scripts. Uses [b]Get_Actions[/b] / [b]Add_Action[/b] cue signals.
-[*] [b]Lua API[/b] — for Lua UI scripts. Direct access to [b]cmAPI.luaEntries[/b] and [b]cmAPI.customModes[/b].
+[*] [b]Lua API[/b] — for Lua UI scripts. Register a callback via [b]cmAPI.registerLuaCallback(fn)[/b]; the function returns a list of entry tables, which the API renders using the same pipeline as MD entries.
 [/list]
 [hr]
 
-[size=130][u]API Description[/u][/size]
+[size=130][u]MD API[/u][/size]
 
 [size=125][u]Flow[/u][/size]
 
@@ -144,6 +144,113 @@ Supply a [b]header[/b] as the first entry of a custom mode to label the frame.
 [/code]
 
 Note: Do NOT add a [b]back[/b] entry manually — the API inserts it automatically for every custom mode, right after the leading [b]header[/b] (if present).
+
+[hr]
+
+[size=130][u]Lua API[/u][/size]
+
+[size=125][u]Flow[/u][/size]
+
+[code]
+[list=1][*] At init time, call  cmAPI.registerLuaCallback(fn)
+[*] fn(menuName, mode, data) is called synchronously on every whitelisted context open
+[*] Return a list of entry tables (same fields as MD Add_Action, with onClick instead of $callback)
+[*] The API renders the entries; user clicks invoke your onClick function directly
+[/list][/code]
+
+[size=125][u][b]registerLuaCallback[/b] — signature[/u][/size]
+
+[code=lua]
+local cmAPI = require("extensions.context_menu_api.ui.context_menu_api")
+cmAPI.registerLuaCallback(function(menuName, mode, data)
+    -- return a list of entry tables, or {} to add nothing
+end)
+[/code]
+[list]
+[*] [b]menuName[/b] [i](string)[/i] — source menu name, e.g. [b]"MapMenu"[/b]
+[*] [b]mode[/b] [i](string)[/i] — context frame mode (same values as MD [b]$mode[/b])
+[*] [b]data[/b] [i](table or nil)[/i] — mode-specific data (same values as MD [b]$data[/b])
+[/list]
+The callback is called for [b]every[/b] whitelisted open across all supported menus. Filter by [b]menuName[/b] and [b]mode[/b] inside your callback as needed.
+
+[size=125][u]Entry table fields[/u][/size]
+
+Entry tables mirror the MD [b]Add_Action[/b] fields, with two differences:
+[list][*] Field names are plain Lua strings (no [b]$[/b] prefix)
+[*] Use [b]onClick[/b] instead of [b]callback[/b] + [b]echo[/b]
+[*] [b]type[/b] [i](string)[/i] — [b]"menuItem"[/b] (default), [b]"subMenu"[/b], [b]"separator"[/b], [b]"header"[/b]
+[*] [b]id[/b] [i](string)[/i] — [b]required[/b] for [b]menuItem[/b] and [b]subMenu[/b]; entries without [b]id[/b] are silently skipped
+[*] [b]text[/b] [i](string)[/i] — display label
+[*] [b]icon[/b] [i](string, optional)[/i] — X4 icon name; prepended to [b]text[/b]
+[*] [b]text2[/b] [i](string, optional)[/i] — right-side secondary text; [b]subMenu[/b] defaults to [b]>[/b]
+[*] [b]textColor[/b] [i](string, optional)[/i] — color key, e.g. [b]"text_positive"[/b]
+[*] [b]text2Color[/b] [i](string, optional)[/i] — color key for [b]text2[/b]
+[*] [b]mouseOver[/b] [i](string, optional)[/i] — tooltip text
+[*] [b]mouseOverIcon[/b] [i](string, optional)[/i] — icon prepended to the tooltip
+[*] [b]active[/b] [i](bool)[/i] — whether the entry is clickable; default [b]true[/b]
+[*] [b]keepOpen[/b] [i](bool, optional)[/i] — if [b]true[/b], menu stays open after click; default [b]false[/b]
+[*] [b]onClick[/b] [i](function)[/i] — called as [b]onClick(data, mode)[/b] when the entry is clicked; [b]data[/b] and [b]mode[/b] are the same values passed to the callback
+[/list]
+[quote][b]Note:[/b] [b]onClick[/b] closures already capture any context the caller needs. There is no [b]echo[/b] field — closures are the Lua-native equivalent.[/quote]
+
+[size=125][u]Minimal example — append to an existing mode[/u][/size]
+
+[code=lua]
+local cmAPI = require("extensions.context_menu_api.ui.context_menu_api")
+
+cmAPI.registerLuaCallback(function(menuName, mode, data)
+    if mode ~= "info_context" then return {} end
+    return {
+        {
+            type    = "menuItem",
+            id      = "mymod_action",
+            text    = "My Lua Action",
+            icon    = "order_follow",
+            onClick = function(data, mode)
+                DebugError("clicked entity: " .. tostring(data.component))
+            end,
+        },
+    }
+end)
+[/code]
+
+[size=125][u]Multi-level sub-menus (Lua)[/u][/size]
+
+Sub-menu navigation works identically to MD. Return a [b]subMenu[/b] entry with an [b]id[/b]; define the contents of that custom mode in the same callback by checking [b]mode[/b].
+
+[code=lua]
+cmAPI.registerLuaCallback(function(menuName, mode, data)
+    if mode == "info_context" then
+        return {
+            { type = "subMenu", id = "mytool_main", text = "My Tool" },
+        }
+    elseif mode == "mytool_main" then
+        return {
+            { type = "header", text = "My Tool" },
+            { type = "subMenu",  id = "mytool_sub",  text = "More Options" },
+            {
+                type    = "menuItem",
+                id      = "mytool_do",
+                text    = "Do Something",
+                onClick = function(data, mode) DebugError("did something") end,
+            },
+        }
+    elseif mode == "mytool_sub" then
+        return {
+            { type = "header", text = "More Options" },
+            {
+                type    = "menuItem",
+                id      = "mytool_a",
+                text    = "Option A",
+                onClick = function(data, mode) DebugError("option A") end,
+            },
+        }
+    end
+    return {}
+end)
+[/code]
+
+The [b]< Back[/b] button is inserted automatically. Do NOT return a [b]back[/b] entry.
 
 [hr]
 

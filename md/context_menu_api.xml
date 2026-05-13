@@ -11,10 +11,8 @@
     1. Listen to Get_Actions. event.param fields:
          $menuName  - "MapMenu"
          $mode      - contextMenuMode string, e.g. "info_context"
-         $entity    - MD component (pilot/manager) or null
-         $person    - NPCSeed string (crew NPC) or null
-         $component - MD component (controllable: ship/station) or null
-         $instance  - "left" | "right" or null
+         other fields depending on the menu and mode, e.g. $entity, $component, $person for MapMenu;
+                      these are converted by the API from string IDs to MD component references where possible,
 
     3. Signal Add_Action (one or more times) inside Get_Actions handler.
        Fields:
@@ -313,7 +311,8 @@
               </do_else>
             </do_if>
           </do_for_each>
-          <!-- $person is NPCSeed (uint64 string) - kept as-is; not a component -->
+          <!-- $person: the instantiated entity was passed from Lua; convert to component reference first,
+               then resolve to npctemplate so consumers can use $person.name, $person.role.name, etc. -->
 
           <do_if value="@$params.$person != null">
             <debug_text text="'[CMA] onOpen: revert back person to npcseed (npctemplate)'.[$params.$person]" chance="Globals.$DebugChance" />

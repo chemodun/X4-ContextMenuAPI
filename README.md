@@ -5,6 +5,7 @@ sub-menus inside map context frames (the panel that appears when you
 right-click a ship, station, etc. on the map).
 
 **Dependencies (required):**
+
 - kuertee UI Extensions and HUD
 - SirNukes Mod Support APIs
 
@@ -38,7 +39,7 @@ Two integration paths exist, both with equivalent capabilities:
 
 - `$menuName` *(string)* — source menu (`"MapMenu"`)
 - `$mode` *(string)* — context frame mode, e.g. `"info_context"`, `"trade"` (see Vanilla context menu modes below)
-- `$data` *(table)* — mode-specific data (e.g. selected entity); structure varies by mode and may be `null` for some modes
+- Additional mode-specific string fields (e.g. `$component`, `$entity`, `$person`, `$inv_ware`, `$weaponmacro`, ...) — see per-mode docs below
 
 ### `Add_Action` — entry fields
 
@@ -62,7 +63,7 @@ The callback cue receives all original `Get_Actions` fields, i.e.:
 
 - `$menuName` *(string)* — source menu (`"MapMenu"`)
 - `$mode` *(string)* — context frame mode, e.g. `"info_context"`, `"trade"` (see Vanilla context menu modes below)
-- `$data` *(table)* — mode-specific data (e.g. selected entity); structure varies by mode and may be `null` for some modes
+- Additional mode-specific string fields — same as in `Get_Actions`
 
 **plus**:
 
@@ -149,7 +150,7 @@ Note: Do NOT add a `back` entry manually — the API inserts it automatically fo
 
 ## Lua API
 
-### Flow
+### Flow (Lua)
 
 ```
 1. At init time, call  cmAPI.registerLuaCallback(fn)
@@ -169,13 +170,14 @@ end)
 
 - `menuName` *(string)* — source menu name, e.g. `"MapMenu"`
 - `mode` *(string)* — context frame mode (same values as MD `$mode`)
-- `data` *(table or nil)* — mode-specific data (same values as MD `$data`)
+- `data` *(table or nil)* — raw context data table; fields mirror the MD param fields but as Lua values (`data.component` and `data.entity` are uint64 cdata; `data.person` is the raw NPCSeed cdata, not yet resolved to an entity)
 
 The callback is called for **every** whitelisted open across all supported menus. Filter by `menuName` and `mode` inside your callback as needed.
 
 ### Entry table fields
 
 Entry tables mirror the MD `Add_Action` fields, with two differences:
+
 - Field names are plain Lua strings (no `$` prefix)
 - Use `onClick` instead of `callback` + `echo`
 
@@ -194,7 +196,7 @@ Entry tables mirror the MD `Add_Action` fields, with two differences:
 
 > **Note:** `onClick` closures already capture any context the caller needs. There is no `echo` field — closures are the Lua-native equivalent.
 
-### Minimal example — append to an existing mode
+### Minimal example (Lua) — append to an existing mode
 
 ```lua
 local cmAPI = require("extensions.context_menu_api.ui.context_menu_api")
@@ -266,15 +268,16 @@ These modes use a single-column frame and are whitelisted in the API. The `Get_A
 #### MapMenu
 
 **`info_context`** — the most useful entry point. Opens when the player right-clicks a crew member, pilot, manager, or ship trader in the info panel.
-`$data` fields:
-- `$component` *(string)* — UniverseID of the controllable (ship or station) as decimal string
-- `$entity` *(string)* — UniverseID of the pilot or manager NPC; null if not applicable
-- `$person` *(string)* — NPCSeed of the crew NPC (uint64 decimal string); null if not applicable
-- `$instance` *(string)* — `"left"` or `"right"` for dual-panel frames; null otherwise
-- `$inv_ware` *(string)* — ware macro string when an inventory item row was clicked; null otherwise
-- `$weaponmacro` *(string)* — weapon macro string when a weapon row was clicked; null otherwise
-- `$equipmentmacro` *(string)* — equipment/deploy macro string when an equipment row was clicked; null otherwise
-- `$software` *(string)* — software macro string when a software row was clicked; null otherwise
+`event.param` fields:
+
+- `$component` *(component or null)* — controllable (ship or station) as MD component reference
+- `$entity` *(component or null)* — pilot or manager NPC as MD component reference; null if not applicable
+- `$person` *(npctemplateentry or null)* — crew NPC template entry (has `.name`, `.role.name`, etc.); null if not applicable
+- `$instance` *(string or null)* — `"left"` or `"right"` for dual-panel frames; null otherwise
+- `$inv_ware` *(string or null)* — ware macro string when an inventory item row was clicked
+- `$weaponmacro` *(string or null)* — weapon macro string when a weapon row was clicked
+- `$equipmentmacro` *(string or null)* — equipment/deploy macro string when an equipment row was clicked
+- `$software` *(string or null)* — software macro string when a software row was clicked
 
 #### PlayerInfoMenu
 
@@ -373,4 +376,4 @@ These modes are not in the whitelist. No `Get_Actions` event is fired; the API p
 
 > **Note:** Venture modes (`venturecontactcontext`, `venturefriendlist`, `venturereport`) are not accessible when the game is modded.
 
-
+---

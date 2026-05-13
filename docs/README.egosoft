@@ -38,7 +38,7 @@ Two integration paths exist, both with equivalent capabilities:
 [list]
 [*] [b]$menuName[/b] [i](string)[/i] — source menu ([b]"MapMenu"[/b])
 [*] [b]$mode[/b] [i](string)[/i] — context frame mode, e.g. [b]"info_context"[/b], [b]"trade"[/b] (see Vanilla context menu modes below)
-[*] [b]$data[/b] [i](table)[/i] — mode-specific data (e.g. selected entity); structure varies by mode and may be [b]nil[/b] for some modes
+[*] [b]$data[/b] [i](table)[/i] — mode-specific data (e.g. selected entity); structure varies by mode and may be [b]null[/b] for some modes
 [/list]
 [size=125][u][b]Add_Action[/b] — entry fields[/u][/size]
 [list]
@@ -58,10 +58,16 @@ Two integration paths exist, both with equivalent capabilities:
 [/list]
 [size=125][u]Callback [b]event.param[/b] fields[/u][/size]
 
-The callback cue receives all original [b]Get_Actions[/b] fields [b]plus[/b]:
+The callback cue receives all original [b]Get_Actions[/b] fields, i.e.:
+[list]
+[*] [b]$menuName[/b] [i](string)[/i] — source menu ([b]"MapMenu"[/b])
+[*] [b]$mode[/b] [i](string)[/i] — context frame mode, e.g. [b]"info_context"[/b], [b]"trade"[/b] (see Vanilla context menu modes below)
+[*] [b]$data[/b] [i](table)[/i] — mode-specific data (e.g. selected entity); structure varies by mode and may be [b]null[/b] for some modes
+[/list]
+[b]plus[/b]:
 [list]
 [*] [b]$id[/b] — the action ID that was clicked
-[*] [b]$echo[/b] — the value of [b]$echo[/b] passed to [b]Add_Action[/b] (if any)
+[*] [b]$echo[/b] — the value of [b]$echo[/b] passed to [b]Add_Action[/b] (if any) or [b]null[/b].
 [/list]
 [size=125][u]Minimal example — append to an existing mode[/u][/size]
 
@@ -154,13 +160,13 @@ These modes use a single-column frame and are whitelisted in the API. The [b]Get
 [b][b]info_context[/b][/b] — the most useful entry point. Opens when the player right-clicks a crew member, pilot, manager, or ship trader in the info panel.
 [b]$data[/b] fields:
 [list][*] [b]$component[/b] [i](string)[/i] — UniverseID of the controllable (ship or station) as decimal string
-[*] [b]$entity[/b] [i](string)[/i] — UniverseID of the pilot or manager NPC; nil if not applicable
-[*] [b]$person[/b] [i](string)[/i] — NPCSeed of the crew NPC (uint64 decimal string); nil if not applicable
-[*] [b]$instance[/b] [i](string)[/i] — [b]"left"[/b] or [b]"right"[/b] for dual-panel frames; nil otherwise
-[*] [b]$inv_ware[/b] [i](string)[/i] — ware macro string when an inventory item row was clicked; nil otherwise
-[*] [b]$weaponmacro[/b] [i](string)[/i] — weapon macro string when a weapon row was clicked; nil otherwise
-[*] [b]$equipmentmacro[/b] [i](string)[/i] — equipment/deploy macro string when an equipment row was clicked; nil otherwise
-[*] [b]$software[/b] [i](string)[/i] — software macro string when a software row was clicked; nil otherwise
+[*] [b]$entity[/b] [i](string)[/i] — UniverseID of the pilot or manager NPC; null if not applicable
+[*] [b]$person[/b] [i](string)[/i] — NPCSeed of the crew NPC (uint64 decimal string); null if not applicable
+[*] [b]$instance[/b] [i](string)[/i] — [b]"left"[/b] or [b]"right"[/b] for dual-panel frames; null otherwise
+[*] [b]$inv_ware[/b] [i](string)[/i] — ware macro string when an inventory item row was clicked; null otherwise
+[*] [b]$weaponmacro[/b] [i](string)[/i] — weapon macro string when a weapon row was clicked; null otherwise
+[*] [b]$equipmentmacro[/b] [i](string)[/i] — equipment/deploy macro string when an equipment row was clicked; null otherwise
+[*] [b]$software[/b] [i](string)[/i] — software macro string when a software row was clicked; null otherwise
 [/list]
 [size=120][u]PlayerInfoMenu[/u][/size]
 

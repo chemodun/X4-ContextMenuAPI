@@ -264,6 +264,12 @@
           <set_value name="$entry.$text" exact="''" />
         </do_if>
 
+        <!-- Skip menuItem and subMenu entries that have no id: they cannot dispatch and must not be injected -->
+        <do_if value="($entry.$type == 'menuItem' or $entry.$type == 'subMenu') and @$entry.$id == null">
+          <debug_text text="'[CMA] Add_Action skipped: type=%1 requires an id (text=%2)'.[$entry.$type, $entry.$text]" chance="100" />
+          <return />
+        </do_if>
+
         <!-- Append to the blackboard list Lua reads after the 2-frame delay -->
         <do_if value="@player.entity.$cma_temp_entries == null">
           <set_value name="player.entity.$cma_temp_entries" exact="[]" />

@@ -432,20 +432,32 @@ end
 
 -- *** MD signal helpers ***
 
--- Serialize contextMenuData to a table safe for AddUITriggeredEvent
--- (strips cdata and nested tables; keeps scalars only)
-local function sanitizeForMD(data)
+local function getOrCreateEntity(person, controllable)
+  local entity = C.GetInstantiatedPerson(person, controllable)
+  trace("Retrieved entity for person: " .. tostring(entity))
+  if entity == 0 or entity == nil then
+    entity = C.CreateNPCFromPerson(person, controllable)
+    trace("Created entity for person: " .. tostring(entity))
+  end
+  return entity
+end
+
+local function sanitizeForMD(params, data)
   if type(data) ~= "table" then return {} end
-  local out = {}
   for k, v in pairs(data) do
-    local t = type(v)
-    if t == "string" or t == "boolean" or t == "number" then
-      out[k] = v
-    elseif t == "cdata" then
-      out[k] = tostring(v)
+    if k == "person" and v and v ~= 0 and data.component and data.component ~= 0 then
+      -- convert person to entity data type to pass to MD.
+      params[k] = ConvertStringTo64Bit(tostring(getOrCreateEntity(v, data.component)))
+    else
+      -- For other fields, only pass scalars and cdata fields that we know are IDs.
+      local t = type(v)
+      if t == "string" or t == "boolean" or t == "number" then
+        params[k] = v
+      elseif t == "cdata" then
+        params[k] = ConvertStringTo64Bit(tostring(v))
+      end
     end
   end
-  return out
 end
 
 -- Read MD-provided entries from the blackboard into impl.tempMdEntries.
@@ -521,9 +533,9 @@ local function patchMenu(menuToPatch)
     local param = {
       menuName = menu.name,
       mode     = menu.contextMenuMode or "",
-      data     = sanitizeForMD(cmAPI.getContextMenuData(menu) or {}),
     }
 
+    sanitizeForMD(param, cmAPI.getContextMenuData(menu) or {})
     -- Signal MD: includes menu.name so MD conditions can distinguish menus
     AddUITriggeredEvent("Context_Menu_API", "onOpen", param)
 

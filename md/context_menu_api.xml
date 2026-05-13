@@ -302,7 +302,7 @@
           <set_value name="$params" exact="$raw.clone" />
 
           <!-- Convert entity/component string IDs to MD components -->
-          <do_for_each name="$field" in="['$entity', '$component']">
+          <do_for_each name="$field" in="['$entity', '$component', '$person']">
             <do_if value="$params.{$field}?">
               <do_if value="$params.{$field} == 0 or $params.{$field} == '0'">
                 <set_value name="$params.{$field}" exact="null" />
@@ -314,6 +314,11 @@
             </do_if>
           </do_for_each>
           <!-- $person is NPCSeed (uint64 string) - kept as-is; not a component -->
+
+          <do_if value="@$params.$person != null">
+            <debug_text text="'[CMA] onOpen: revert back person to npcseed (npctemplate)'.[$params.$person]" chance="Globals.$DebugChance" />
+            <set_value name="$params.$person" exact="@$params.$person.npctemplate" />
+          </do_if>
 
           <!-- Clear previous temp entries and callbacks; fresh for each open -->
           <set_value name="player.entity.$cma_temp_entries" exact="null" />

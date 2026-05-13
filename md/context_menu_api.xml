@@ -10,7 +10,9 @@
     =============
     1. Listen to Get_Actions. event.param fields:
          $menuName  - "MapMenu"
-         $mode      - contextMenuMode string, e.g. "info_context"
+         $mode      - contextMenuMode string, e.g. "info_context"; changes at every sub-menu level
+         $rootMode  - the original vanilla mode that opened the context menu (e.g. "info_context");
+                      stays constant across all sub-menu levels; use this to identify the root context
          other fields depending on the menu and mode, e.g. $entity, $component, $person for MapMenu;
                       these are converted by the API from string IDs to MD component references where possible,
 

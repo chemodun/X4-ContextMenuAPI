@@ -54,6 +54,10 @@ local cmAPI = {
   -- nav stack: each entry = { mode = string, data = table }
   navStack = {},
 
+  -- the original vanilla mode that opened the current context menu;
+  -- preserved across sub-menu navigation so consumers can always identify the root context
+  rootMode = nil,
+
   -- temp entries written by MD in response to the "onOpen" signal
   tempMdEntries = {},
 
@@ -407,7 +411,7 @@ local function onCreateContextFrame(contextFrame, contextMenuData, contextMenuMo
     if menuTable then
       local builder = makeAppendBuilder(menuTable)
       for _, cb in ipairs(cmAPI.luaCallbacks) do
-        local ok, result = pcall(cb, menu.name, contextMenuMode, contextMenuData)
+        local ok, result = pcall(cb, menu.name, contextMenuMode, cmAPI.rootMode, contextMenuData)
         if ok then
           if type(result) == "table" then
             backInjected = buildEntryList(result, builder, contextMenuData, contextMenuMode, isCustom, backInjected)
@@ -526,6 +530,11 @@ local function patchMenu(menuToPatch)
       return
     end
 
+    -- Track the original vanilla mode; preserved through sub-menu navigation.
+    if cmAPI.customModes[mode] == nil then
+      cmAPI.rootMode = mode
+    end
+
     -- If already waiting, just update the args (e.g. rapid re-open)
     if cmAPI.delaying then
       cmAPI.pendingArgs = args
@@ -540,6 +549,7 @@ local function patchMenu(menuToPatch)
     local param = {
       menuName = menu.name,
       mode     = menu.contextMenuMode or "",
+      rootMode = cmAPI.rootMode or "",
     }
 
     sanitizeForMD(param, cmAPI.getContextMenuData(menu) or {})
@@ -572,7 +582,7 @@ local function Init()
   cmAPI.menuMap = Lib.Get_Egosoft_Menu("MapMenu")
 
   -- Patch all menus that support context frames
-  local menuNames = { "MapMenu" --[[ , "PlayerInfoMenu" ]] }
+  local menuNames = { "MapMenu" , "PlayerInfoMenu" }
   for _, mname in ipairs(menuNames) do
     local m = Lib.Get_Egosoft_Menu(mname)
     if m then

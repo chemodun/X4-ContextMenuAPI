@@ -38,7 +38,8 @@ Two integration paths exist, both with equivalent capabilities:
 ### `Get_Actions` — event fields
 
 - `$menuName` *(string)* — source menu (`"MapMenu"`)
-- `$mode` *(string)* — context frame mode, e.g. `"info_context"`, `"trade"` (see Vanilla context menu modes below)
+- `$mode` *(string)* — context frame mode, e.g. `"info_context"`, `"trade"` (see Vanilla context menu modes below); changes at every sub-menu level
+- `$rootMode` *(string)* — the original vanilla mode that opened the menu; stays constant across all sub-menu levels (same as `$mode` at the root level)
 - Additional mode-specific string fields (e.g. `$component`, `$entity`, `$person`, `$inv_ware`, `$weaponmacro`, ...) — see per-mode docs below
 
 ### `Add_Action` — entry fields
@@ -62,8 +63,9 @@ Two integration paths exist, both with equivalent capabilities:
 The callback cue receives all original `Get_Actions` fields, i.e.:
 
 - `$menuName` *(string)* — source menu (`"MapMenu"`)
-- `$mode` *(string)* — context frame mode, e.g. `"info_context"`, `"trade"` (see Vanilla context menu modes below)
-- Additional mode-specific string fields — same as in `Get_Actions`
+- `$mode` *(string)* — same as in `Get_Actions`
+- `$rootMode` *(string)* — same as in `Get_Actions`
+- - Additional mode-specific string fields — same as in `Get_Actions`
 
 **plus**:
 
@@ -163,13 +165,14 @@ Note: Do NOT add a `back` entry manually — the API inserts it automatically fo
 
 ```lua
 local cmAPI = require("extensions.context_menu_api.ui.context_menu_api")
-cmAPI.registerLuaCallback(function(menuName, mode, data)
+cmAPI.registerLuaCallback(function(menuName, mode, rootMode, data)
     -- return a list of entry tables, or {} to add nothing
 end)
 ```
 
 - `menuName` *(string)* — source menu name, e.g. `"MapMenu"`
-- `mode` *(string)* — context frame mode (same values as MD `$mode`)
+- `mode` *(string)* — current context frame mode (changes at sub-menu levels)
+- `rootMode` *(string or nil)* — original vanilla mode that opened the menu; constant across sub-menu levels
 - `data` *(table or nil)* — raw context data table; fields mirror the MD param fields but as Lua values (`data.component` and `data.entity` are uint64 cdata; `data.person` is the raw NPCSeed cdata, not yet resolved to an entity)
 
 The callback is called for **every** whitelisted open across all supported menus. Filter by `menuName` and `mode` inside your callback as needed.

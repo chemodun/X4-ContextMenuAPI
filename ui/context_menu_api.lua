@@ -26,9 +26,6 @@ ffi.cdef [[
 local cmAPI = {
   pendingCallbacks = {},
 
-  -- registered entries for vanilla modes  { [modeString] = { {filter, build}, ... } }
-  luaEntries = {},
-
   -- registered custom modes (blank frame)  { [modeId] = buildFn(builder, data) }
   customModes = {},
 
@@ -172,7 +169,7 @@ local function makeBuilder(addRow, addEmptyRow)
   function b.subMenuButton(text, modeId, opts)
     -- auto-register the target as a custom mode if not already known
     if not cmAPI.customModes[modeId] then
-      cmAPI.customModes[modeId] = function() end
+      cmAPI.customModes[modeId] = true
     end
     local o = {
       id            = modeId,
@@ -222,7 +219,39 @@ function cmAPI.getContextMenuData(menu)
   if not menu then return nil end
   if menu.name == "PlayerInfoMenu" then
     -- Custom logic for PlayerInfoMenu personnel mode
-    return cmAPI.pendingArgs and cmAPI.pendingArgs[1] or {}
+    if cmAPI.rootMode == "personnel" then
+      return cmAPI.pendingArgs and cmAPI.pendingArgs[1] or {}
+    elseif cmAPI.rootMode == "inventory" then
+      return {
+        curEntry = menu.inventoryData.curEntry or {},
+        selectedWares = menu.inventoryData.selectedWares or {},
+        inventoryMode = menu.inventoryData.mode or "",
+      }
+    elseif cmAPI.rootMode == "transactionlog" then
+      if cmAPI.pendingArgs and cmAPI.pendingArgs[1] then
+        local rowdata = cmAPI.pendingArgs[1]
+        local entryIdx = nil
+        local showPartnerSecondary = nil
+        if (type(rowdata) == "table") then
+          entryIdx = Helper.transactionLogData.transactionsByIDUnfiltered[rowdata[1]]
+          showPartnerSecondary = rowdata[2]
+        else
+          entryIdx = Helper.transactionLogData.transactionsByIDUnfiltered[rowdata]
+        end
+
+        local entry = Helper.transactionLogData.accountLogUnfiltered[entryIdx]
+        local contextObject = {
+          id =  showPartnerSecondary and entry.partner_secondary or entry.partner,
+          name = showPartnerSecondary and entry.partnername_secondary or entry.partnername,
+        }
+        local active = (contextObject.id ~= 0) and C.IsComponentOperational(contextObject.id)
+        return {
+          curEntry = entry or {},
+          contextObject = contextObject,
+          active = active,
+        }
+      end
+    end
   end
   return menu.contextMenuData
 end
@@ -384,38 +413,17 @@ local function onCreateContextFrame(contextFrame, contextMenuData, contextMenuMo
     return
   end
 
-  contextMenuData = cmAPI.getContextMenuData(menu) or {}
-  trace("onCreateContextFrame: mode = " .. tostring(contextMenuMode) .. ", data = " .. tostring(contextMenuData))
+  trace("onCreateContextFrame: rootMode = " .. tostring(cmAPI.rootMode) .. ", mode = " .. tostring(contextMenuMode) .. ", data = " .. tostring(cmAPI.currentData))
 
-  local isCustom = cmAPI.customModes[contextMenuMode] ~= nil
+  local isCustom = cmAPI.customModes[contextMenuMode] == true
 
   -- Any fresh non-custom open clears stale nav stack (e.g. after ESC)
   if not isCustom then
     cmAPI.navStack = {}
   end
 
-  -- 1. Append Lua-registered entries for vanilla modes
-  local entries = cmAPI.luaEntries[contextMenuMode]
-  if entries then
-    local menuTable = findVanillaTable(contextFrame)
-    if menuTable then
-      local builder = makeAppendBuilder(menuTable)
-      for _, spec in ipairs(entries) do
-        local ok, err = pcall(function()
-          if (not spec.filter) or spec.filter(contextMenuData) then
-            spec.build(builder, contextMenuData)
-          end
-        end)
-        if not ok then
-          debug("error in vanilla entry for '" .. tostring(contextMenuMode) .. "': " .. tostring(err))
-        end
-      end
-    end
-  end
-
-  -- 2. Build a custom mode (blank frame — no vanilla table exists)
+  -- 1. Build a custom mode (blank frame — no vanilla table exists)
   if isCustom then
-    local buildFn = cmAPI.customModes[contextMenuMode]
     local menuTable = findVanillaTable(contextFrame)
     if menuTable then
     else
@@ -428,24 +436,18 @@ local function onCreateContextFrame(contextFrame, contextMenuData, contextMenuMo
         defaultInteractiveObject = true,
       })
       menuTable:setColWidthPercent(1, 100)
-      local builder = makeTableBuilder(menuTable)
-      local ok, err = pcall(buildFn, builder, contextMenuData)
-      if not ok then
-        debug("error in custom mode '" .. tostring(contextMenuMode) .. "': " .. tostring(err))
-      end
     end
   end
 
   local backInjected = false
 
-  -- 3. Inject Lua-callback entries (synchronous — no delay needed)
+  -- 2. Inject Lua-callback entries (synchronous — no delay needed)
   if #cmAPI.luaCallbacks > 0 then
     local menuTable = findVanillaTable(contextFrame)
     if menuTable then
-      local data = prepareData(menu.name, cmAPI.rootMode, contextMenuData)
       local builder = makeAppendBuilder(menuTable)
       for _, cb in ipairs(cmAPI.luaCallbacks) do
-        local ok, result = pcall(cb, menu.name, contextMenuMode, cmAPI.rootMode, data)
+        local ok, result = pcall(cb, menu.name, contextMenuMode, cmAPI.rootMode, cmAPI.currentData)
         if ok then
           if type(result) == "table" then
             backInjected = buildEntryList(result, builder, contextMenuData, contextMenuMode, isCustom, backInjected)
@@ -457,12 +459,12 @@ local function onCreateContextFrame(contextFrame, contextMenuData, contextMenuMo
     end
   end
 
-  -- 4. Inject MD-provided temp entries (collected during the 2-frame delay)
+  -- 3. Inject MD-provided temp entries (collected during the 2-frame delay)
   if #cmAPI.tempMdEntries > 0 then
     local menuTable = findVanillaTable(contextFrame)
     if menuTable then
       local builder = makeAppendBuilder(menuTable)
-      backInjected = buildEntryList(cmAPI.tempMdEntries, builder, contextMenuData, contextMenuMode, isCustom, backInjected)
+      backInjected = buildEntryList(cmAPI.tempMdEntries, builder, nil, contextMenuMode, isCustom, backInjected)
     end
     cmAPI.tempMdEntries = {}
   end
@@ -555,7 +557,7 @@ local function patchMenu(menuToPatch)
     -- Only intercept for whitelisted modes and registered custom modes.
     -- All other modes (multi-column complex windows) bypass the API entirely.
     local mode = menu.contextMenuMode
-    local isSupported = cmAPI.customModes[mode] ~= nil
+    local isSupported = cmAPI.customModes[mode] == true
     if not isSupported then
       local whitelist = cmAPI.supportedModes[menu.name]
       isSupported = whitelist ~= nil and whitelist[mode] == true
@@ -567,7 +569,7 @@ local function patchMenu(menuToPatch)
     end
 
     -- Track the original vanilla mode; preserved through sub-menu navigation.
-    if cmAPI.customModes[mode] == nil then
+    if cmAPI.customModes[mode] ~= true then
       cmAPI.rootMode = mode
     end
 
@@ -587,8 +589,9 @@ local function patchMenu(menuToPatch)
       mode     = menu.contextMenuMode or "",
       rootMode = cmAPI.rootMode or menu.contextMenuMode,
     }
-    local data = prepareData(menu.name, cmAPI.rootMode, cmAPI.getContextMenuData(menu))
-    sanitizeForMD(param, data)
+    local data = cmAPI.getContextMenuData(menu)
+    cmAPI.currentData = prepareData(menu.name, cmAPI.rootMode, data)
+    sanitizeForMD(param, cmAPI.currentData)
     -- Signal MD: includes menu.name so MD conditions can distinguish menus
     AddUITriggeredEvent("Context_Menu_API", "onOpen", param)
 

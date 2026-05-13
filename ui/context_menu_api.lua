@@ -467,7 +467,7 @@ local function Init()
   cmAPI.menuMap = Lib.Get_Egosoft_Menu("MapMenu")
 
   -- Patch all menus that support context frames
-  local menuNames = { "MapMenu", "DiplomacyMenu", "PlayerInfoMenu" }
+  local menuNames = { "MapMenu" --[[ , "DiplomacyMenu", "PlayerInfoMenu"  ]] }
   for _, mname in ipairs(menuNames) do
     local m = Lib.Get_Egosoft_Menu(mname)
     if m then

@@ -19,11 +19,11 @@ same MD tick / Lua call) by appending entries via the builder API.
 Two integration paths exist, both with equivalent capabilities:
 
 - **MD API** — for Mission Director scripts. Uses `Get_Actions` / `Add_Action` cue signals.
-- **Lua API** — for Lua UI scripts. Direct access to `cmAPI.luaEntries` and `cmAPI.customModes`.
+- **Lua API** — for Lua UI scripts. Register a callback via `cmAPI.registerLuaCallback(fn)`; the function returns a list of entry tables, which the API renders using the same pipeline as MD entries.
 
 ---
 
-## API Description
+## MD API
 
 ### Flow
 
@@ -144,6 +144,114 @@ Supply a `header` as the first entry of a custom mode to label the frame.
 ```
 
 Note: Do NOT add a `back` entry manually — the API inserts it automatically for every custom mode, right after the leading `header` (if present).
+
+---
+
+## Lua API
+
+### Flow
+
+```
+1. At init time, call  cmAPI.registerLuaCallback(fn)
+2. fn(menuName, mode, data) is called synchronously on every whitelisted context open
+3. Return a list of entry tables (same fields as MD Add_Action, with onClick instead of $callback)
+4. The API renders the entries; user clicks invoke your onClick function directly
+```
+
+### `registerLuaCallback` — signature
+
+```lua
+local cmAPI = require("extensions.context_menu_api.ui.context_menu_api")
+cmAPI.registerLuaCallback(function(menuName, mode, data)
+    -- return a list of entry tables, or {} to add nothing
+end)
+```
+
+- `menuName` *(string)* — source menu name, e.g. `"MapMenu"`
+- `mode` *(string)* — context frame mode (same values as MD `$mode`)
+- `data` *(table or nil)* — mode-specific data (same values as MD `$data`)
+
+The callback is called for **every** whitelisted open across all supported menus. Filter by `menuName` and `mode` inside your callback as needed.
+
+### Entry table fields
+
+Entry tables mirror the MD `Add_Action` fields, with two differences:
+- Field names are plain Lua strings (no `$` prefix)
+- Use `onClick` instead of `callback` + `echo`
+
+- `type` *(string)* — `"menuItem"` (default), `"subMenu"`, `"separator"`, `"header"`
+- `id` *(string)* — **required** for `menuItem` and `subMenu`; entries without `id` are silently skipped
+- `text` *(string)* — display label
+- `icon` *(string, optional)* — X4 icon name; prepended to `text`
+- `text2` *(string, optional)* — right-side secondary text; `subMenu` defaults to `>`
+- `textColor` *(string, optional)* — color key, e.g. `"text_positive"`
+- `text2Color` *(string, optional)* — color key for `text2`
+- `mouseOver` *(string, optional)* — tooltip text
+- `mouseOverIcon` *(string, optional)* — icon prepended to the tooltip
+- `active` *(bool)* — whether the entry is clickable; default `true`
+- `keepOpen` *(bool, optional)* — if `true`, menu stays open after click; default `false`
+- `onClick` *(function)* — called as `onClick(data, mode)` when the entry is clicked; `data` and `mode` are the same values passed to the callback
+
+> **Note:** `onClick` closures already capture any context the caller needs. There is no `echo` field — closures are the Lua-native equivalent.
+
+### Minimal example — append to an existing mode
+
+```lua
+local cmAPI = require("extensions.context_menu_api.ui.context_menu_api")
+
+cmAPI.registerLuaCallback(function(menuName, mode, data)
+    if mode ~= "info_context" then return {} end
+    return {
+        {
+            type    = "menuItem",
+            id      = "mymod_action",
+            text    = "My Lua Action",
+            icon    = "order_follow",
+            onClick = function(data, mode)
+                DebugError("clicked entity: " .. tostring(data.component))
+            end,
+        },
+    }
+end)
+```
+
+### Multi-level sub-menus (Lua)
+
+Sub-menu navigation works identically to MD. Return a `subMenu` entry with an `id`; define the contents of that custom mode in the same callback by checking `mode`.
+
+```lua
+cmAPI.registerLuaCallback(function(menuName, mode, data)
+    if mode == "info_context" then
+        return {
+            { type = "subMenu", id = "mytool_main", text = "My Tool" },
+        }
+    elseif mode == "mytool_main" then
+        return {
+            { type = "header", text = "My Tool" },
+            { type = "subMenu",  id = "mytool_sub",  text = "More Options" },
+            {
+                type    = "menuItem",
+                id      = "mytool_do",
+                text    = "Do Something",
+                onClick = function(data, mode) DebugError("did something") end,
+            },
+        }
+    elseif mode == "mytool_sub" then
+        return {
+            { type = "header", text = "More Options" },
+            {
+                type    = "menuItem",
+                id      = "mytool_a",
+                text    = "Option A",
+                onClick = function(data, mode) DebugError("option A") end,
+            },
+        }
+    end
+    return {}
+end)
+```
+
+The `< Back` button is inserted automatically. Do NOT return a `back` entry.
 
 ---
 

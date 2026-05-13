@@ -428,6 +428,13 @@ local function onCreateContextFrame(contextFrame, contextMenuData, contextMenuMo
     end
     cmAPI.tempMdEntries = {}
   end
+
+  if menu.name == "MapMenu" then
+    local height = contextFrame:getUsedHeight()
+    if contextFrame.properties.y + height + Helper.frameBorder > Helper.viewHeight then
+      contextFrame.properties.y = Helper.viewHeight - height - Helper.frameBorder
+    end
+  end
 end
 
 -- *** MD signal helpers ***

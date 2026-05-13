@@ -58,6 +58,10 @@ local cmAPI = {
   -- temp entries written by MD in response to the "onOpen" signal
   tempMdEntries = {},
 
+  -- prepared context data for the current open; set once in the interceptor,
+  -- shared by all callbacks so prepareData() is only called once per open
+  currentData = nil,
+
   -- frame-delay state
   delaying    = false,
   pendingArgs = nil,

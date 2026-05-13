@@ -343,6 +343,39 @@ end
 
 -- *** UIX createContextFrame_on_end / refreshContextFrame_on_end callback ***
 
+local function prepareData(menuName, mode, data)
+  local result = {}
+  if data == nil then
+    return result
+  end
+  if menuName == 'PlayerInfoMenu' then
+    if mode == 'personnel' then
+      if #data == 2 then
+        result.subMode = data[1]
+        for k, v in pairs(data[2]) do
+          result[k] = v
+        end
+        if result.id then
+          if result.type == "person" then
+            result.person = C.ConvertStringTo64Bit(tostring(result.id))
+            result.id = nil
+          elseif result.type == "entity" then
+            result.entity = result.id
+            result.id = nil
+          end
+        end
+        if result.container and result.container ~= 0 then
+          result.component = ConvertStringTo64Bit(tostring(result.container))
+        end
+      end
+    end
+  else
+    result = data
+  end
+  return result
+end
+
+
 local function onCreateContextFrame(contextFrame, contextMenuData, contextMenuMode)
   debug("onCreateContextFrame: menu = " .. tostring(contextFrame.menu.name))
   local menu = contextFrame.menu
@@ -351,7 +384,7 @@ local function onCreateContextFrame(contextFrame, contextMenuData, contextMenuMo
     return
   end
 
-  contextMenuData = cmAPI.getContextMenuData(menu)
+  contextMenuData = cmAPI.getContextMenuData(menu) or {}
   trace("onCreateContextFrame: mode = " .. tostring(contextMenuMode) .. ", data = " .. tostring(contextMenuData))
 
   local isCustom = cmAPI.customModes[contextMenuMode] ~= nil
@@ -409,9 +442,10 @@ local function onCreateContextFrame(contextFrame, contextMenuData, contextMenuMo
   if #cmAPI.luaCallbacks > 0 then
     local menuTable = findVanillaTable(contextFrame)
     if menuTable then
+      local data = prepareData(menu.name, cmAPI.rootMode, contextMenuData)
       local builder = makeAppendBuilder(menuTable)
       for _, cb in ipairs(cmAPI.luaCallbacks) do
-        local ok, result = pcall(cb, menu.name, contextMenuMode, cmAPI.rootMode, contextMenuData)
+        local ok, result = pcall(cb, menu.name, contextMenuMode, cmAPI.rootMode, data)
         if ok then
           if type(result) == "table" then
             backInjected = buildEntryList(result, builder, contextMenuData, contextMenuMode, isCustom, backInjected)
@@ -456,15 +490,17 @@ end
 local function sanitizeForMD(params, data)
   if type(data) ~= "table" then return {} end
   for k, v in pairs(data) do
-    if k == "person" and v and v ~= 0 and data.component and data.component ~= 0 then
+    if k == "person" and v and v ~= 0 and (data.component and data.component ~= 0) then
       -- convert person to entity data type to pass to MD.
+      debug("Resolving person to entity for MD: person=" .. tostring(v) .. ", type " .. tostring(type(v)) .. " controllable=" .. tostring(data.component))
       params[k] = ConvertStringTo64Bit(tostring(getOrCreateEntity(v, data.component)))
+      -- params[k] = v
     else
       -- For other fields, only pass scalars and cdata fields that we know are IDs.
       local t = type(v)
       if t == "string" or t == "boolean" or t == "number" then
         params[k] = v
-      elseif t == "cdata" then
+      elseif t == "cdata" or t == "userdata" then
         params[k] = ConvertStringTo64Bit(tostring(v))
       end
     end
@@ -549,10 +585,10 @@ local function patchMenu(menuToPatch)
     local param = {
       menuName = menu.name,
       mode     = menu.contextMenuMode or "",
-      rootMode = cmAPI.rootMode or "",
+      rootMode = cmAPI.rootMode or menu.contextMenuMode,
     }
-
-    sanitizeForMD(param, cmAPI.getContextMenuData(menu) or {})
+    local data = prepareData(menu.name, cmAPI.rootMode, cmAPI.getContextMenuData(menu))
+    sanitizeForMD(param, data)
     -- Signal MD: includes menu.name so MD conditions can distinguish menus
     AddUITriggeredEvent("Context_Menu_API", "onOpen", param)
 

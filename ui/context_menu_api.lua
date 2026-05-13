@@ -32,6 +32,22 @@ local cmAPI = {
   -- registered custom modes (blank frame)  { [modeId] = buildFn(builder, data) }
   customModes = {},
 
+  -- Whitelisted modes per menu where entry injection is supported.
+  -- Only these modes fire the onOpen event and accept entry injection.
+  -- Modes not in this list are multi-column complex windows and bypass the API entirely.
+  -- Custom modes (registered via registerCustomMode) are always accepted regardless.
+  supportedModes = {
+    MapMenu = {
+      info_context = true,
+    },
+    -- PlayerInfoMenu: inventory / personnel / transactionlog are simple 1-column lists.
+    PlayerInfoMenu = {
+      inventory      = true,
+      personnel      = true,
+      transactionlog = true,
+    },
+  },
+
   -- nav stack: each entry = { mode = string, data = table }
   navStack = {},
 
@@ -421,6 +437,20 @@ local function patchMenu(menuToPatch)
     cmAPI.activeMenu = menu
     local args = { ... }
 
+    -- Only intercept for whitelisted modes and registered custom modes.
+    -- All other modes (multi-column complex windows) bypass the API entirely.
+    local mode = menu.contextMenuMode
+    local isSupported = cmAPI.customModes[mode] ~= nil
+    if not isSupported then
+      local whitelist = cmAPI.supportedModes[menu.name]
+      isSupported = whitelist ~= nil and whitelist[mode] == true
+    end
+    if not isSupported then
+      trace("createContextFrame bypass: mode '" .. tostring(mode) .. "' not in whitelist")
+      egoMenuMapCreateContextFrame[menu.name](...)
+      return
+    end
+
     -- If already waiting, just update the args (e.g. rapid re-open)
     if cmAPI.delaying then
       cmAPI.pendingArgs = args
@@ -467,7 +497,7 @@ local function Init()
   cmAPI.menuMap = Lib.Get_Egosoft_Menu("MapMenu")
 
   -- Patch all menus that support context frames
-  local menuNames = { "MapMenu" --[[ , "DiplomacyMenu", "PlayerInfoMenu"  ]] }
+  local menuNames = { "MapMenu" --[[ , "PlayerInfoMenu" ]] }
   for _, mname in ipairs(menuNames) do
     local m = Lib.Get_Egosoft_Menu(mname)
     if m then

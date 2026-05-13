@@ -32,6 +32,9 @@ local cmAPI = {
   -- registered custom modes (blank frame)  { [modeId] = buildFn(builder, data) }
   customModes = {},
 
+  -- registered Lua callbacks: each fn(menuName, mode, data) returns a list of entries
+  luaCallbacks = {},
+
   -- Whitelisted modes per menu where entry injection is supported.
   -- Only these modes fire the onOpen event and accept entry injection.
   -- Modes not in this list are multi-column complex windows and bypass the API entirely.
@@ -242,6 +245,18 @@ function cmAPI.goBack()
   menu.createContextFrame(tableUnpack(cmAPI.pendingArgs))
 end
 
+-- Register a Lua callback that provides entries for context menu opens.
+-- fn(menuName, mode, data) must return a list of entry tables.
+-- Entry fields mirror the MD Add_Action fields plus an optional onClick function:
+--   { type="menuItem", id="...", text="...", onClick=function(data, mode) ... end }
+--   { type="subMenu",  id="...", text="..." }
+--   { type="separator" }
+--   { type="header",   text="..." }
+-- menuItem and subMenu entries without an id are silently skipped.
+function cmAPI.registerLuaCallback(fn)
+  table.insert(cmAPI.luaCallbacks, fn)
+end
+
 -- *** Find the vanilla 1-column table inside a contextFrame ***
 
 local function findVanillaTable(contextFrame)
@@ -252,6 +267,74 @@ local function findVanillaTable(contextFrame)
     end
   end
   return nil
+end
+
+-- *** Entry list renderer ***
+-- Appends entries to builder, handling auto-injection of back/header for custom
+-- modes (once per open, tracked by backInjected).
+-- menuItem and subMenu entries without an id are silently skipped.
+-- Returns the updated backInjected flag.
+local function buildEntryList(entries, builder, data, mode, isCustom, backInjected)
+  if #entries == 0 then return backInjected end
+
+  local startIdx = 1
+  if isCustom and not backInjected then
+    local first = entries[1]
+    if first and first.type == "header" then
+      builder.header(first.text or "")
+      startIdx = 2
+    end
+    builder.back()
+    backInjected = true
+  end
+
+  for i = startIdx, #entries do
+    local entry = entries[i]
+    local t     = entry.type or "menuItem"
+    local opts  = {
+      id            = entry.id,
+      icon          = entry.icon,
+      text2         = entry.text2,
+      textColor     = entry.textColor,
+      text2Color    = entry.text2Color,
+      mouseOver     = entry.mouseOver,
+      mouseOverIcon = entry.mouseOverIcon,
+    }
+    if t == "separator" then
+      builder.separator()
+    elseif t == "header" then
+      builder.header(entry.text or "")
+    elseif t == "menuItem" and entry.id ~= nil then
+      -- active: MD delivers booleans as integers (0/1); normalize to real bool
+      local active  = not (entry.active == false or entry.active == 0)
+      local id      = entry.id
+      local onClick = nil
+      if active then
+        local keepOpen = entry.keepOpen == true or entry.keepOpen == 1
+        if type(entry.onClick) == "function" then
+          -- Lua entry: call the provided function with context data
+          local fn = entry.onClick
+          onClick = function()
+            fn(data, mode)
+            if not keepOpen then cmAPI.activeMenu.closeContextMenu() end
+          end
+        else
+          -- MD entry: fire the action event for MD-side dispatch
+          onClick = function()
+            AddUITriggeredEvent("Context_Menu_API", "action", id)
+            if not keepOpen then cmAPI.activeMenu.closeContextMenu() end
+          end
+        end
+      end
+      opts.active = active
+      builder.entryButton(entry.text or "", onClick, opts)
+    elseif t == "subMenu" and entry.id ~= nil then
+      builder.subMenuButton(entry.text or "", entry.id, opts)
+    end
+    -- menuItem / subMenu without id: no matching branch → silently skipped
+  end
+
+  return backInjected
 end
 
 -- *** UIX createContextFrame_on_end / refreshContextFrame_on_end callback ***
@@ -265,7 +348,7 @@ local function onCreateContextFrame(contextFrame, contextMenuData, contextMenuMo
   end
 
   contextMenuData = cmAPI.getContextMenuData(menu)
-  trace("onCreateContextFrame: menu = " .. tostring(contextFrame.menu.name) .. "mode = " .. tostring(contextMenuMode) .. ", data = " .. tostring(contextMenuData))
+  trace("onCreateContextFrame: mode = " .. tostring(contextMenuMode) .. ", data = " .. tostring(contextMenuData))
 
   local isCustom = cmAPI.customModes[contextMenuMode] ~= nil
 
@@ -316,59 +399,32 @@ local function onCreateContextFrame(contextFrame, contextMenuData, contextMenuMo
     end
   end
 
-  -- 3. Inject MD-provided temp entries (collected during the 2-frame delay)
+  local backInjected = false
+
+  -- 3. Inject Lua-callback entries (synchronous — no delay needed)
+  if #cmAPI.luaCallbacks > 0 then
+    local menuTable = findVanillaTable(contextFrame)
+    if menuTable then
+      local builder = makeAppendBuilder(menuTable)
+      for _, cb in ipairs(cmAPI.luaCallbacks) do
+        local ok, result = pcall(cb, menu.name, contextMenuMode, contextMenuData)
+        if ok then
+          if type(result) == "table" then
+            backInjected = buildEntryList(result, builder, contextMenuData, contextMenuMode, isCustom, backInjected)
+          end
+        else
+          debug("Lua callback error: " .. tostring(result))
+        end
+      end
+    end
+  end
+
+  -- 4. Inject MD-provided temp entries (collected during the 2-frame delay)
   if #cmAPI.tempMdEntries > 0 then
     local menuTable = findVanillaTable(contextFrame)
     if menuTable then
       local builder = makeAppendBuilder(menuTable)
-      local startIdx = 1
-      -- For custom modes: auto-inject back after any leading header.
-      -- MD consumers must NOT send an explicit 'back' entry (it is skipped).
-      if isCustom then
-        local first = cmAPI.tempMdEntries[1]
-        if first and first.type == "header" then
-          builder.header(first.text or "")
-          startIdx = 2
-        end
-        builder.back()
-      end
-      for i = startIdx, #cmAPI.tempMdEntries do
-        local entry = cmAPI.tempMdEntries[i]
-        local t = entry.type
-        local opts = {
-          id            = entry.id,
-          icon          = entry.icon,
-          text2         = entry.text2,
-          textColor     = entry.textColor,
-          text2Color    = entry.text2Color,
-          mouseOver     = entry.mouseOver,
-          mouseOverIcon = entry.mouseOverIcon,
-        }
-        if t == "separator" then
-          builder.separator()
-        elseif t == "menuItem" then
-          -- active: MD sends boolean as integer (0/1); normalize to real bool
-          local active = not (entry.active == false or entry.active == 0)
-          local id = entry.id or ""
-          local onClick = nil
-          if active and id ~= "" then
-            local keepOpen = entry.keepOpen == true or entry.keepOpen == 1
-            onClick = function()
-              AddUITriggeredEvent("Context_Menu_API", "action", id)
-              if not keepOpen then
-                cmAPI.activeMenu.closeContextMenu()
-              end
-            end
-          end
-          opts.active = active
-          builder.entryButton(entry.text or "", onClick, opts)
-        elseif t == "subMenu" then
-          builder.subMenuButton(entry.text or "", entry.id or "", opts)
-        elseif t == "header" then
-          builder.header(entry.text or "")
-          -- 'back' is silently skipped — auto-injected above for custom modes
-        end
-      end
+      backInjected = buildEntryList(cmAPI.tempMdEntries, builder, contextMenuData, contextMenuMode, isCustom, backInjected)
     end
     cmAPI.tempMdEntries = {}
   end

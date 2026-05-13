@@ -38,7 +38,8 @@ Two integration paths exist, both with equivalent capabilities:
 [h2][b]Get_Actions[/b] — event fields[/h2]
 [list]
 [*] [b]$menuName[/b] [i](string)[/i] — source menu ([b]"MapMenu"[/b])
-[*] [b]$mode[/b] [i](string)[/i] — context frame mode, e.g. [b]"info_context"[/b], [b]"trade"[/b] (see Vanilla context menu modes below)
+[*] [b]$mode[/b] [i](string)[/i] — context frame mode, e.g. [b]"info_context"[/b], [b]"trade"[/b] (see Vanilla context menu modes below); changes at every sub-menu level
+[*] [b]$rootMode[/b] [i](string)[/i] — the original vanilla mode that opened the menu; stays constant across all sub-menu levels (same as [b]$mode[/b] at the root level)
 [*] Additional mode-specific string fields (e.g. [b]$component[/b], [b]$entity[/b], [b]$person[/b], [b]$inv_ware[/b], [b]$weaponmacro[/b], ...) — see per-mode docs below
 [/list]
 [h2][b]Add_Action[/b] — entry fields[/h2]
@@ -62,8 +63,9 @@ Two integration paths exist, both with equivalent capabilities:
 The callback cue receives all original [b]Get_Actions[/b] fields, i.e.:
 [list]
 [*] [b]$menuName[/b] [i](string)[/i] — source menu ([b]"MapMenu"[/b])
-[*] [b]$mode[/b] [i](string)[/i] — context frame mode, e.g. [b]"info_context"[/b], [b]"trade"[/b] (see Vanilla context menu modes below)
-[*] Additional mode-specific string fields — same as in [b]Get_Actions[/b]
+[*] [b]$mode[/b] [i](string)[/i] — same as in [b]Get_Actions[/b]
+[*] [b]$rootMode[/b] [i](string)[/i] — same as in [b]Get_Actions[/b]
+[*] - Additional mode-specific string fields — same as in [b]Get_Actions[/b]
 [/list]
 [b]plus[/b]:
 [list]
@@ -163,13 +165,14 @@ Note: Do NOT add a [b]back[/b] entry manually — the API inserts it automatical
 
 [code]
 local cmAPI = require("extensions.context_menu_api.ui.context_menu_api")
-cmAPI.registerLuaCallback(function(menuName, mode, data)
+cmAPI.registerLuaCallback(function(menuName, mode, rootMode, data)
     -- return a list of entry tables, or {} to add nothing
 end)
 [/code]
 [list]
 [*] [b]menuName[/b] [i](string)[/i] — source menu name, e.g. [b]"MapMenu"[/b]
-[*] [b]mode[/b] [i](string)[/i] — context frame mode (same values as MD [b]$mode[/b])
+[*] [b]mode[/b] [i](string)[/i] — current context frame mode (changes at sub-menu levels)
+[*] [b]rootMode[/b] [i](string or nil)[/i] — original vanilla mode that opened the menu; constant across sub-menu levels
 [*] [b]data[/b] [i](table or nil)[/i] — raw context data table; fields mirror the MD param fields but as Lua values ([b]data.component[/b] and [b]data.entity[/b] are uint64 cdata; [b]data.person[/b] is the raw NPCSeed cdata, not yet resolved to an entity)
 [/list]
 The callback is called for [b]every[/b] whitelisted open across all supported menus. Filter by [b]menuName[/b] and [b]mode[/b] inside your callback as needed.

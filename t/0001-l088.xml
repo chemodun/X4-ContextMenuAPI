@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Chinese Traditional -->
+<diff>
+  <add sel="/language">
+    <page id="1972092426" title="Context Menu API" descr="" voice="no">
+      <!-- mod identity -->
+      <t id="1">Context Menu API</t>
+      <t id="2">提供MD和Lua級別的API，用於擴展某些上下文選單。</t>
+      <!-- settings labels (90000+) -->
+      <t id="90000">偵錯</t>
+      <t id="90010">偵錯層級</t>
+      <t id="90012">偵錯</t>
+      <t id="90013">追蹤</t>
+    </page>
+  </add>
+</diff>

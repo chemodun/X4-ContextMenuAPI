@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Chinese Simplified -->
+<diff>
+  <add sel="/language">
+    <page id="1972092426" title="Context Menu API" descr="" voice="no">
+      <!-- mod identity -->
+      <t id="1">Context Menu API</t>
+      <t id="2">提供MD和Lua级别的API，用于扩展某些上下文菜单。</t>
+      <!-- settings labels (90000+) -->
+      <t id="90000">调试</t>
+      <t id="90010">调试级别</t>
+      <t id="90012">调试</t>
+      <t id="90013">跟踪</t>
+    </page>
+  </add>
+</diff>

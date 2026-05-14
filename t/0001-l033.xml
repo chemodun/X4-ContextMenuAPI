@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- French -->
+<diff>
+  <add sel="/language">
+    <page id="1972092426" title="Context Menu API" descr="" voice="no">
+      <!-- mod identity -->
+      <t id="1">Context Menu API</t>
+      <t id="2">Fournit une API MD et Lua pour étendre certains menus contextuels.</t>
+      <!-- settings labels (90000+) -->
+      <t id="90000">Débogage</t>
+      <t id="90010">Niveau de débogage</t>
+      <t id="90012">Débogage</t>
+      <t id="90013">Trace</t>
+    </page>
+  </add>
+</diff>

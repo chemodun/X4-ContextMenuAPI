@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Czech -->
+<diff>
+  <add sel="/language">
+    <page id="1972092426" title="Context Menu API" descr="" voice="no">
+      <!-- mod identity -->
+      <t id="1">Context Menu API</t>
+      <t id="2">Poskytuje MD a Lua API pro rozšíření některých kontextových nabídek.</t>
+      <!-- settings labels (90000+) -->
+      <t id="90000">Ladění</t>
+      <t id="90010">Úroveň ladění</t>
+      <t id="90012">Ladění</t>
+      <t id="90013">Trasování</t>
+    </page>
+  </add>
+</diff>

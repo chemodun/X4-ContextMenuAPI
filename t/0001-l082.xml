@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Korean -->
+<diff>
+  <add sel="/language">
+    <page id="1972092426" title="Context Menu API" descr="" voice="no">
+      <!-- mod identity -->
+      <t id="1">Context Menu API</t>
+      <t id="2">일부 컨텍스트 메뉴를 확장하기 위한 MD 및 Lua API를 제공합니다.</t>
+      <!-- settings labels (90000+) -->
+      <t id="90000">디버그</t>
+      <t id="90010">디버그 수준</t>
+      <t id="90012">디버그</t>
+      <t id="90013">추적</t>
+    </page>
+  </add>
+</diff>

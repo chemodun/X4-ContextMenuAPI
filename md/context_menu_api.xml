@@ -302,7 +302,7 @@
           <set_value name="$params" exact="$raw.clone" />
 
           <!-- Convert entity/component string IDs to MD components -->
-          <do_for_each name="$field" in="['$entity', '$component', '$person']">
+          <do_for_each name="$field" in="['$entity', '$component', '$person', '$contextObject', '$buyer', '$seller', '$partner']">
             <do_if value="$params.{$field}?">
               <do_if value="$params.{$field} == 0 or $params.{$field} == '0'">
                 <set_value name="$params.{$field}" exact="null" />

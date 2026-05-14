@@ -4,12 +4,12 @@
     name="Context Menu API"
     author="Chem O`Dun"
     version="100"
-    date="2026-05-12"
+    date="2026-05-14"
     enabled="true"
     save="false"
     sync="false"
-    description="API mod: register entries and sub-menus for map context frames, with optional MD integration via 1-frame signal/response. Requires kuertee UI Extensions and SirNukes Mod Support APIs.">
-    <text language="44" name="Context Menu API" description="Provides a registration API for extending map context menus, with MD signal support." />
+    description="An API mod for X4: Foundations that extends the modding surface beyond what SirNukes Mod Support APIs covers, targeting menus and context frame modes not exposed by that API.">
+    <dependency version="800"></dependency>
     <dependency id="kuerteeUIExtensionsAndHUD" optional="false" name="kuertee UI Extensions and HUD" version="804"></dependency>
     <dependency id="ws_2042901274" optional="false" name="SirNukes Mod Support APIs" version="195"></dependency>
 </content>

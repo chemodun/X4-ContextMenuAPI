@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <content
-	id="ws_3725826962"
-	name="Context Menu API"
-	author="Chem O`Dun"
-	version="100"
-	date="2026-05-14"
-	enabled="true"
-	save="false"
-	sync="false"
-	lastupdate="1778768636"
-	description="An API mod for X4: Foundations that extends the modding surface beyond what SirNukes Mod Support APIs covers, targeting menus and context frame modes not exposed by that API.">
-	<dependency version="800"></dependency>
-	<dependency id="kuerteeUIExtensionsAndHUD" optional="false" name="kuertee UI Extensions and HUD" version="804"></dependency>
-	<dependency id="ws_2042901274" optional="false" name="SirNukes Mod Support APIs" version="195"></dependency>
+  id="ws_3725826962"
+  name="Context Menu API"
+  author="Chem O`Dun"
+  version="100"
+  date="2026-05-14"
+  enabled="true"
+  save="false"
+  sync="false"
+  lastupdate="1778768636"
+  description="An API mod for X4: Foundations that extends the modding surface beyond what SirNukes Mod Support APIs covers, targeting menus and context frame modes not exposed by that API.">
+  <dependency version="800"></dependency>
+  <dependency id="kuerteeUIExtensionsAndHUD" optional="false" name="kuertee UI Extensions and HUD" version="804"></dependency>
+  <dependency id="ws_2042901274" optional="false" name="SirNukes Mod Support APIs" version="195"></dependency>
 </content>

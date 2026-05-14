@@ -381,7 +381,18 @@ local function prepareData(menuName, mode, data)
   if data == nil then
     return result
   end
-  if menuName == 'PlayerInfoMenu' then
+  if menuName == 'MapMenu' then
+    for k, v in pairs(data) do
+      if mode == 'info_context' then
+        if k == "entity" then
+          result.type = "entity"
+        elseif k == "person" then
+          result.type = "person"
+        end
+      end
+      result[k] = v
+    end
+  elseif menuName == 'PlayerInfoMenu' then
     if mode == 'personnel' then
       if #data == 2 then
         result.subMode = data[1]

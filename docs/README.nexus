@@ -75,7 +75,7 @@ The callback cue receives all original [b]Get_Actions[/b] fields, i.e.:
 [*] [b]$menuName[/b] [i](string)[/i] - source menu ([b]"MapMenu"[/b])
 [*] [b]$mode[/b] [i](string)[/i] - same as in [b]Get_Actions[/b]
 [*] [b]$rootMode[/b] [i](string)[/i] - same as in [b]Get_Actions[/b]
-[*] - Additional mode-specific string fields - same as in [b]Get_Actions[/b]
+[*] Additional mode-specific string fields - same as in [b]Get_Actions[/b]
 [/list]
 [b]plus[/b]:
 [list]
@@ -162,7 +162,7 @@ Note: Do NOT add a [b]back[/b] entry manually - the API inserts it automatically
 
 [code]
 [list=1][*] At init time, call  cmAPI.registerLuaCallback(fn)
-[*] fn(menuName, mode, data) is called synchronously on every whitelisted context open
+[*] fn(menuName, mode, rootMode, data) is called synchronously on every whitelisted context open
 [*] Return a list of entry tables (same fields as MD Add_Action, with onClick instead of $callback)
 [*] The API renders the entries; user clicks invoke your onClick function directly
 [/list][/code]
@@ -209,7 +209,7 @@ Entry tables mirror the MD [b]Add_Action[/b] fields, with two differences:
 [code]
 local cmAPI = require("extensions.context_menu_api.ui.context_menu_api")
 
-cmAPI.registerLuaCallback(function(menuName, mode, data)
+cmAPI.registerLuaCallback(function(menuName, mode, rootMode, data)
     if mode ~= "info_context" then return {} end
     return {
         {
@@ -230,7 +230,7 @@ end)
 Sub-menu navigation works identically to MD. Return a [b]subMenu[/b] entry with an [b]id[/b]; define the contents of that custom mode in the same callback by checking [b]mode[/b].
 
 [code]
-cmAPI.registerLuaCallback(function(menuName, mode, data)
+cmAPI.registerLuaCallback(function(menuName, mode, rootMode, data)
     if mode == "info_context" then
         return {
             { type = "subMenu", id = "mytool_main", text = "My Tool" },

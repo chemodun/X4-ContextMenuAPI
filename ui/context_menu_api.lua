@@ -412,8 +412,42 @@ local function prepareData(menuName, mode, data)
           result.component = ConvertStringTo64Bit(tostring(result.container))
         end
       end
+    elseif mode == 'inventory' then
+      if data.curEntry and #data.curEntry == 2 then
+        result.ware = data.curEntry[1]
+        for k, v in pairs(data.curEntry[2]) do
+          result[k] = v
+        end
+      end
+      if data.selectedWares and next(data.selectedWares) ~= nil then
+        result.selectedWares = {}
+        for k, v in pairs(data.selectedWares) do
+          if v then
+            result.selectedWares[#result.selectedWares + 1] = k
+          end
+        end
+      end
+    elseif mode == 'transactionlog' then
+      if data.curEntry and next(data.curEntry) then
+        for k, v in pairs(data.curEntry) do
+          result[k] = v
+        end
+        if data.active ~= nil then
+          result.active = data.active
+        end
+        if data.contextObject then
+          if data.contextObject.id then
+            result.contextObject = data.contextObject.id
+          end
+          if data.contextObject.name then
+            result.contextObjectName = data.contextObject.name
+          end
+        end
+      end
     end
-  else
+  end
+  if next(result) == nil then
+    -- If we didn't recognize any special fields to convert, just pass the original data through.
     result = data
   end
   return result
@@ -427,7 +461,9 @@ local function onCreateContextFrame(contextFrame, contextMenuData, contextMenuMo
     debug("contextFrame missing menu reference")
     return
   end
-
+  if contextMenuMode == nil then
+    contextMenuMode = menu.contextMenuMode
+  end
   trace("onCreateContextFrame: rootMode = " .. tostring(cmAPI.rootMode) .. ", mode = " .. tostring(contextMenuMode) .. ", data = " .. tostring(cmAPI.currentData))
 
   local isCustom = cmAPI.customModes[contextMenuMode] == true
@@ -519,6 +555,17 @@ local function sanitizeForMD(params, data)
         params[k] = v
       elseif t == "cdata" or t == "userdata" then
         params[k] = ConvertStringTo64Bit(tostring(v))
+      elseif t == "table" and #v > 0 then
+        params[k] = {}
+        for i, item in ipairs(v) do
+          if type(item) == "string" or type(item) == "number" then
+            params[k] = params[k] or {}
+            table.insert(params[k], item)
+          elseif type(item) == "cdata" or type(item) == "userdata" then
+            params[k] = params[k] or {}
+            table.insert(params[k], ConvertStringTo64Bit(tostring(item)))
+          end
+        end
       end
     end
   end

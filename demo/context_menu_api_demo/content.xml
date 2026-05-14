@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<content
+    id="context_menu_api_demo"
+    name="Context Menu API Demo"
+    author="Chem O`Dun"
+    version="100"
+    date="2026-05-14"
+    save="false"
+    sync="false"
+    description="Demo mod for the Context Menu API: shows multi-level MD and Lua context menus injected into MapMenu and PlayerInfoMenu.">
+    <text language="44" name="Context Menu API Demo" description="Demo mod for the Context Menu API." />
+    <dependency name="context_menu_api" />
+</content>

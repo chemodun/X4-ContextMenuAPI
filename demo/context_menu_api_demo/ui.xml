@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon name="context_menu_api_demo" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../ui/core/addon.xsd">
+    <environment type="menus">
+        <dependency name="sn_mod_support_apis" />
+        <dependency name="kuertee_ui_extensions" />
+        <dependency name="context_menu_api" />
+        <file name="ui/context_menu_api_demo.lua" />
+    </environment>
+</addon>

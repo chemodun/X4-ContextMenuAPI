@@ -25,7 +25,7 @@ Two integration paths exist, both with equivalent capabilities:
 
 ## Installation
 
-- **Steam Workshop**: [Context Menu API](https://steamcommunity.com/sharedfiles/filedetails/?id=0)
+- **Steam Workshop**: [Context Menu API](https://steamcommunity.com/sharedfiles/filedetails/?id=3725826962)
 - **Nexus Mods**: [Context Menu API](https://www.nexusmods.com/x4foundations/mods/2110)
 
 ## MD API

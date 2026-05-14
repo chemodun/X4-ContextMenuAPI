@@ -258,7 +258,7 @@ end)
 
 The `< Back` button is inserted automatically. Do NOT return a `back` entry.
 
-## Supported game Menus and Modes
+## Supported game Menus/Screens and Modes
 
 These are the two Menus(screens) are supported by the API: `MapMenu` (the main map screen) and `PlayerInfoMenu`. Each menu has a set of supported modes (context frame types).
 

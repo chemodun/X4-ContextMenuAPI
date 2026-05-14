@@ -2,11 +2,6 @@
 
 An API mod for X4: Foundations that *extends* the modding surface beyond what *SirNukes Mod Support APIs* covers, targeting menus and context frame modes not exposed by that API. Currently it supports the `Information` panel context frames on `Map` screen, and the `Personnel Management`, `Inventory`, `Spacesuit Upgrades`, and `Transaction Log` context frames on `Player Info` screen.
 
-**Dependencies (required):**
-
-- kuertee UI Extensions and HUD
-- SirNukes Mod Support APIs
-
 ## Overview
 
 The mod intercepts `createContextFrame` on the supported menus and fires a signal before the frame is built. Consumers respond synchronously (within the same MD tick / Lua call) by appending entries via the builder API.
@@ -15,6 +10,23 @@ Two integration paths exist, both with equivalent capabilities:
 
 - **MD API** - for Mission Director scripts. Uses `Get_Actions` / `Add_Action` cue signals.
 - **Lua API** - for Lua UI scripts. Register a callback via `cmAPI.registerLuaCallback(fn)`; the function returns a list of entry tables, which the API renders using the same pipeline as MD entries.
+
+## Requirements
+
+- **X4: Foundations**: Version **8.00HF4** or higher and **UI Extensions and HUD**: Version **v8.0.4.x** or higher by [kuertee](https://next.nexusmods.com/profile/kuertee?gameId=2659):
+  - Available on Nexus Mods: [UI Extensions and HUD](https://www.nexusmods.com/x4foundations/mods/552)
+- **X4: Foundations**: Version **9.00 beta 3** or higher and **UI Extensions and HUD**: Version **v9.0.0.0.3** or higher by [kuertee](https://next.nexusmods.com/profile/kuertee?gameId=2659).
+- **Mod Support APIs**: Version 1.95 or higher by [SirNukes](https://next.nexusmods.com/profile/sirnukes?gameId=2659):
+  - Available on Steam: [SirNukes Mod Support APIs](https://steamcommunity.com/sharedfiles/filedetails/?id=2042901274)
+  - Available on Nexus Mods: [Mod Support APIs](https://www.nexusmods.com/x4foundations/mods/503)
+- **Options Helper**: Version 1.0 or higher by [Chem O`Dun](https://next.nexusmods.com/profile/ChemODun/mods?gameId=2659):
+  - Available on Steam: [Options Helper](https://steamcommunity.com/sharedfiles/filedetails/?id=3715253556)
+  - Available on Nexus Mods: [Options Helper](https://www.nexusmods.com/x4foundations/mods/2089)
+
+## Installation
+
+- **Steam Workshop**: [Context Menu API](https://steamcommunity.com/sharedfiles/filedetails/?id=0)
+- **Nexus Mods**: [Context Menu API](https://www.nexusmods.com/x4foundations/mods/2110)
 
 ## MD API
 
@@ -451,3 +463,28 @@ These modes are not in the whitelist. No `Get_Actions` event is fired; the API p
 
 > **Note:** Venture modes (`venturecontactcontext`, `venturefriendlist`, `venturereport`) are not accessible when the game is modded.
 
+## Extension options
+
+**Options Menu > Extension options > Context Menu API**:
+
+- **Debug mode**: Controls log verbosity. Options: None (default), Debug, Trace. Use Debug or Trace only when troubleshooting - these write to the game log on every refresh.
+
+![Extension options](docs/images/extension_options.png)
+
+## Credits
+
+- **Author**: Chem O`Dun, on [Nexus Mods](https://next.nexusmods.com/profile/ChemODun/mods?gameId=2659) and [Steam Workshop](https://steamcommunity.com/id/chemodun/myworkshopfiles/?appid=392160)
+- *"X4: Foundations"* is a trademark of [Egosoft](https://www.egosoft.com).
+
+## Acknowledgements
+
+- [EGOSOFT](https://www.egosoft.com) - for the X series.
+- [kuertee](https://next.nexusmods.com/profile/kuertee?gameId=2659) - for the `UI Extensions and HUD` that makes this extension possible.
+- [SirNukes](https://next.nexusmods.com/profile/sirnukes?gameId=2659) - for the `Mod Support APIs` that power the UI hooks and options menu.
+
+## Changelog
+
+### [1.00] - 2026-05-14
+
+- **Added**
+  - Initial public version.

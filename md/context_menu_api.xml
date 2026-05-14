@@ -114,7 +114,7 @@
         <event_cue_signalled />
       </conditions>
       <actions>
-        <debug_text text="'[CMA] Reloaded'" chance="Globals.$DebugChance" />
+        <debug_text text="'ContextMenuAPI: Reloaded'" chance="Globals.$DebugChance" />
       </actions>
     </cue>
 
@@ -210,7 +210,7 @@
         <event_cue_signalled />
       </conditions>
       <actions>
-        <debug_text text="'[CMA] Get_Actions mode=%1 menu=%2'.[event.param.$mode, event.param.$menuName]"
+        <debug_text text="'ContextMenuAPI: Get_Actions mode=%1 menu=%2'.[event.param.$mode, event.param.$menuName]"
           chance="Globals.$DebugChance" />
       </actions>
     </cue>
@@ -226,7 +226,7 @@
       </conditions>
       <actions>
         <set_value name="$entry" exact="event.param.clone" />
-        <debug_text text="'[CMA] Add_Action called with entry: %s'.[$entry]" chance="Globals.$DebugChance" />
+        <debug_text text="'ContextMenuAPI: Add_Action called with entry: %s'.[$entry]" chance="Globals.$DebugChance" />
 
         <!-- Default type -->
         <do_if value="@$entry.$type == null">
@@ -266,7 +266,7 @@
 
         <!-- Skip menuItem and subMenu entries that have no id: they cannot dispatch and must not be injected -->
         <do_if value="($entry.$type == 'menuItem' or $entry.$type == 'subMenu') and @$entry.$id == null">
-          <debug_text text="'[CMA] Add_Action skipped: type=%1 requires an id (text=%2)'.[$entry.$type, $entry.$text]" chance="100" />
+          <debug_text text="'ContextMenuAPI: Add_Action skipped: type=%1 requires an id (text=%2)'.[$entry.$type, $entry.$text]" chance="100" />
           <return />
         </do_if>
 
@@ -276,7 +276,7 @@
         </do_if>
         <append_to_list name="player.entity.$cma_temp_entries" exact="$entry" />
 
-        <debug_text text="'[CMA] Add_Action type=%1 id=%2 active=%3 text=%4'.
+        <debug_text text="'ContextMenuAPI: Add_Action type=%1 id=%2 active=%3 text=%4'.
                          [$entry.$type, @$entry.$id, @$entry.$active, $entry.$text]"
           chance="Globals.$DebugChance" />
       </actions>
@@ -292,7 +292,7 @@
         <event_ui_triggered screen="'Context_Menu_API'" control="'onOpen'" />
       </conditions>
       <actions>
-        <debug_text text="'[CMA] onOpen, param3 = %1, is table = %2'.
+        <debug_text text="'ContextMenuAPI: onOpen, param3 = %1, is table = %2'.
           [event.param3, typeof event.param3 == datatype.table]"
           chance="Globals.$DebugChance" />
         <set_value name="$raw" exact="event.param3" />
@@ -317,7 +317,7 @@
                then resolve to npctemplate so consumers can use $person.name, $person.role.name, etc. -->
 
           <do_if value="@$params.$person != null">
-            <debug_text text="'[CMA] onOpen: revert back person to npcseed (npctemplate)'.[$params.$person]" chance="Globals.$DebugChance" />
+            <debug_text text="'ContextMenuAPI: onOpen: revert back person to npcseed (npctemplate)'.[$params.$person]" chance="Globals.$DebugChance" />
             <set_value name="$params.$person" exact="@$params.$person.npctemplate" />
           </do_if>
 
@@ -328,7 +328,7 @@
           <!-- Store for action callbacks -->
           <set_value name="Globals.$lastParams" exact="$params" />
 
-          <debug_text text="'[CMA] onOpen menu=%1 mode=%2'.[$params.$menuName, $params.$mode]"
+          <debug_text text="'ContextMenuAPI: onOpen menu=%1 mode=%2'.[$params.$menuName, $params.$mode]"
             chance="Globals.$DebugChance" />
 
           <!-- Signal consumers - they call Add_Action synchronously here -->
@@ -359,10 +359,10 @@
           </do_if>
           <signal_cue_instantly cue="Globals.$callbacks.{$key}.$cue"
             param="$cbParam" />
-          <debug_text text="'[CMA] On_Action dispatched id=%1'.[$id]" chance="Globals.$DebugChance" />
+          <debug_text text="'ContextMenuAPI: On_Action dispatched id=%1'.[$id]" chance="Globals.$DebugChance" />
         </do_if>
         <do_else>
-          <debug_text text="'[CMA] On_Action: no callback for id=%1'.[$id]" chance="Globals.$DebugChance" />
+          <debug_text text="'ContextMenuAPI: On_Action: no callback for id=%1'.[$id]" chance="Globals.$DebugChance" />
         </do_else>
       </actions>
     </cue>

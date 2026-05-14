@@ -1,29 +1,21 @@
 [h1]Context Menu API[/h1]
 
-An API mod for X4: Foundations that lets other mods register entries and
-sub-menus inside map context frames (the panel that appears when you
-right-click a ship, station, etc. on the map).
+An API mod for X4: Foundations that [i]extends[/i] the modding surface beyond what [i]SirNukes Mod Support APIs[/i] covers, targeting menus and context frame modes not exposed by that API. Currently it supports the [b]Information[/b] panel context frames on [b]Map[/b] screen, and the [b]Personnel Management[/b], [b]Inventory[/b], [b]Spacesuit Upgrades[/b], and [b]Transaction Log[/b] context frames on [b]Player Info[/b] screen.
 
 [b]Dependencies (required):[/b]
 [list]
 [*] kuertee UI Extensions and HUD
 [*] SirNukes Mod Support APIs
 [/list]
-[hr]
-
 [h2][b]Overview[/b][/h2]
 
-The mod intercepts [b]createContextFrame[/b] on the supported menus and fires a
-signal before the frame is built. Consumers respond synchronously (within the
-same MD tick / Lua call) by appending entries via the builder API.
+The mod intercepts [b]createContextFrame[/b] on the supported menus and fires a signal before the frame is built. Consumers respond synchronously (within the same MD tick / Lua call) by appending entries via the builder API.
 
 Two integration paths exist, both with equivalent capabilities:
 [list]
-[*] [b]MD API[/b] — for Mission Director scripts. Uses [b]Get_Actions[/b] / [b]Add_Action[/b] cue signals.
-[*] [b]Lua API[/b] — for Lua UI scripts. Register a callback via [b]cmAPI.registerLuaCallback(fn)[/b]; the function returns a list of entry tables, which the API renders using the same pipeline as MD entries.
+[*] [b]MD API[/b] - for Mission Director scripts. Uses [b]Get_Actions[/b] / [b]Add_Action[/b] cue signals.
+[*] [b]Lua API[/b] - for Lua UI scripts. Register a callback via [b]cmAPI.registerLuaCallback(fn)[/b]; the function returns a list of entry tables, which the API renders using the same pipeline as MD entries.
 [/list]
-[hr]
-
 [h2][b]MD API[/b][/h2]
 
 [h2]Flow[/h2]
@@ -35,44 +27,44 @@ Two integration paths exist, both with equivalent capabilities:
 [*] The API builds the frame; user clicks trigger your $callback cue
 [/list][/code]
 
-[h2][b]Get_Actions[/b] — event fields[/h2]
+[h2][b]Get_Actions[/b] - event fields[/h2]
 [list]
-[*] [b]$menuName[/b] [i](string)[/i] — source menu ([b]"MapMenu"[/b])
-[*] [b]$mode[/b] [i](string)[/i] — context frame mode, e.g. [b]"info_context"[/b], [b]"trade"[/b] (see Vanilla context menu modes below); changes at every sub-menu level
-[*] [b]$rootMode[/b] [i](string)[/i] — the original vanilla mode that opened the menu; stays constant across all sub-menu levels (same as [b]$mode[/b] at the root level)
-[*] Additional mode-specific string fields (e.g. [b]$component[/b], [b]$entity[/b], [b]$person[/b], [b]$inv_ware[/b], [b]$weaponmacro[/b], ...) — see per-mode docs below
+[*] [b]$menuName[/b] [i](string)[/i] - source menu ([b]"MapMenu"[/b])
+[*] [b]$mode[/b] [i](string)[/i] - context frame mode, e.g. [b]"info_context"[/b], [b]"trade"[/b] (see Vanilla context menu modes below); changes at every sub-menu level
+[*] [b]$rootMode[/b] [i](string)[/i] - the original vanilla mode that opened the menu; stays constant across all sub-menu levels (same as [b]$mode[/b] at the root level)
+[*] Additional mode-specific string fields (e.g. [b]$component[/b], [b]$entity[/b], [b]$person[/b], [b]$inv_ware[/b], [b]$weaponmacro[/b], ...) - see per-mode docs below
 [/list]
-[h2][b]Add_Action[/b] — entry fields[/h2]
+[h2][b]Add_Action[/b] - entry fields[/h2]
 [list]
-[*] [b]$type[/b] — entry type: [b]"menuItem"[/b] (default), [b]"subMenu"[/b], [b]"separator"[/b], [b]"header"[/b]
-[*] [b]$id[/b] [i](string)[/i] — unique ID; required for [b]menuItem[/b] / [b]subMenu[/b] / [b]header[/b]; for [b]menuItem[/b] auto-derived from [b]$text[/b] if omitted and [b]$callback[/b] is set
-[*] [b]$text[/b] [i](string)[/i] — display label
-[*] [b]$icon[/b] [i](string, optional)[/i] — icon name (X4 icon set); prepended to [b]$text[/b] as [b]\027[icon] text[/b]
-[*] [b]$text2[/b] [i](string, optional)[/i] — right-side secondary text; for [b]subMenu[/b] the API fills in [b]>[/b] if omitted
-[*] [b]$textColor[/b] [i](string, optional)[/i] — Color key for the main text (e.g. [b]'text_positive'[/b]); default: [b]'text_normal'[/b]
-[*] [b]$text2Color[/b] [i](string, optional)[/i] — Color key for [b]$text2[/b]; default: [b]'text_normal'[/b]
-[*] [b]$mouseOver[/b] [i](string, optional)[/i] — tooltip text shown on hover
-[*] [b]$mouseOverIcon[/b] [i](string, optional)[/i] — icon prepended to the tooltip text
-[*] [b]$callback[/b] [i](cue reference)[/i] — cue to call when this [b]menuItem[/b] is clicked
-[*] [b]$echo[/b] [i](any, optional)[/i] — arbitrary value passed back in [b]event.param.$echo[/b] of the callback
-[*] [b]$active[/b] [i](bool)[/i] — whether the entry is clickable; default: [b]true[/b] (auto-set to [b]false[/b] when no [b]$callback[/b])
-[*] [b]$keepOpen[/b] [i](bool, optional)[/i] — if [b]true[/b], the context menu stays open after the click; default: menu closes
+[*] [b]$type[/b] - entry type: [b]"menuItem"[/b] (default), [b]"subMenu"[/b], [b]"separator"[/b], [b]"header"[/b]
+[*] [b]$id[/b] [i](string)[/i] - unique ID; required for [b]menuItem[/b] / [b]subMenu[/b] / [b]header[/b]; for [b]menuItem[/b] auto-derived from [b]$text[/b] if omitted and [b]$callback[/b] is set
+[*] [b]$text[/b] [i](string)[/i] - display label
+[*] [b]$icon[/b] [i](string, optional)[/i] - icon name (X4 icon set); prepended to [b]$text[/b] as [b]\027[icon] text[/b]
+[*] [b]$text2[/b] [i](string, optional)[/i] - right-side secondary text; for [b]subMenu[/b] the API fills in [b]>[/b] if omitted
+[*] [b]$textColor[/b] [i](string, optional)[/i] - Color key for the main text (e.g. [b]'text_positive'[/b]); default: [b]'text_normal'[/b]
+[*] [b]$text2Color[/b] [i](string, optional)[/i] - Color key for [b]$text2[/b]; default: [b]'text_normal'[/b]
+[*] [b]$mouseOver[/b] [i](string, optional)[/i] - tooltip text shown on hover
+[*] [b]$mouseOverIcon[/b] [i](string, optional)[/i] - icon prepended to the tooltip text
+[*] [b]$callback[/b] [i](cue reference)[/i] - cue to call when this [b]menuItem[/b] is clicked
+[*] [b]$echo[/b] [i](any, optional)[/i] - arbitrary value passed back in [b]event.param.$echo[/b] of the callback
+[*] [b]$active[/b] [i](bool)[/i] - whether the entry is clickable; default: [b]true[/b] (auto-set to [b]false[/b] when no [b]$callback[/b])
+[*] [b]$keepOpen[/b] [i](bool, optional)[/i] - if [b]true[/b], the context menu stays open after the click; default: menu closes
 [/list]
 [h2]Callback [b]event.param[/b] fields[/h2]
 
 The callback cue receives all original [b]Get_Actions[/b] fields, i.e.:
 [list]
-[*] [b]$menuName[/b] [i](string)[/i] — source menu ([b]"MapMenu"[/b])
-[*] [b]$mode[/b] [i](string)[/i] — same as in [b]Get_Actions[/b]
-[*] [b]$rootMode[/b] [i](string)[/i] — same as in [b]Get_Actions[/b]
-[*] - Additional mode-specific string fields — same as in [b]Get_Actions[/b]
+[*] [b]$menuName[/b] [i](string)[/i] - source menu ([b]"MapMenu"[/b])
+[*] [b]$mode[/b] [i](string)[/i] - same as in [b]Get_Actions[/b]
+[*] [b]$rootMode[/b] [i](string)[/i] - same as in [b]Get_Actions[/b]
+[*] - Additional mode-specific string fields - same as in [b]Get_Actions[/b]
 [/list]
 [b]plus[/b]:
 [list]
-[*] [b]$id[/b] — the action ID that was clicked
-[*] [b]$echo[/b] — the value of [b]$echo[/b] passed to [b]Add_Action[/b] (if any) or [b]null[/b].
+[*] [b]$id[/b] - the action ID that was clicked
+[*] [b]$echo[/b] - the value of [b]$echo[/b] passed to [b]Add_Action[/b] (if any) or [b]null[/b].
 [/list]
-[h2]Minimal example — append to an existing mode[/h2]
+[h2]Minimal example - append to an existing mode[/h2]
 
 [code]
 <cue name="On_CMA_Get_Actions" instantiate="true">
@@ -106,9 +98,7 @@ The callback cue receives all original [b]Get_Actions[/b] fields, i.e.:
 
 [h2]Multi-level sub-menus (MD)[/h2]
 
-A [b]subMenu[/b] entry navigates to a new blank frame identified by [b]$id[/b]. The
-API manages a navigation stack and injects a [b]< Back[/b] button automatically.
-Supply a [b]header[/b] as the first entry of a custom mode to label the frame.
+A [b]subMenu[/b] entry navigates to a new blank frame identified by [b]$id[/b]. The API manages a navigation stack and injects a [b]< Back[/b] button automatically. Supply a [b]header[/b] as the first entry of a custom mode to label the frame.
 
 [code]
 <cue name="On_CMA_Get_Actions" instantiate="true">
@@ -146,9 +136,7 @@ Supply a [b]header[/b] as the first entry of a custom mode to label the frame.
 </cue>
 [/code]
 
-Note: Do NOT add a [b]back[/b] entry manually — the API inserts it automatically for every custom mode, right after the leading [b]header[/b] (if present).
-
-[hr]
+Note: Do NOT add a [b]back[/b] entry manually - the API inserts it automatically for every custom mode, right after the leading [b]header[/b] (if present).
 
 [h2][b]Lua API[/b][/h2]
 
@@ -161,7 +149,7 @@ Note: Do NOT add a [b]back[/b] entry manually — the API inserts it automatical
 [*] The API renders the entries; user clicks invoke your onClick function directly
 [/list][/code]
 
-[h2][b]registerLuaCallback[/b] — signature[/h2]
+[h2][b]registerLuaCallback[/b] - signature[/h2]
 
 [code]
 local cmAPI = require("extensions.context_menu_api.ui.context_menu_api")
@@ -170,10 +158,10 @@ cmAPI.registerLuaCallback(function(menuName, mode, rootMode, data)
 end)
 [/code]
 [list]
-[*] [b]menuName[/b] [i](string)[/i] — source menu name, e.g. [b]"MapMenu"[/b]
-[*] [b]mode[/b] [i](string)[/i] — current context frame mode (changes at sub-menu levels)
-[*] [b]rootMode[/b] [i](string or nil)[/i] — original vanilla mode that opened the menu; constant across sub-menu levels
-[*] [b]data[/b] [i](table or nil)[/i] — raw context data table; fields mirror the MD param fields but as Lua values ([b]data.component[/b] and [b]data.entity[/b] are uint64 cdata; [b]data.person[/b] is the raw NPCSeed cdata, not yet resolved to an entity)
+[*] [b]menuName[/b] [i](string)[/i] - source menu name, e.g. [b]"MapMenu"[/b]
+[*] [b]mode[/b] [i](string)[/i] - current context frame mode (changes at sub-menu levels)
+[*] [b]rootMode[/b] [i](string or nil)[/i] - original vanilla mode that opened the menu; constant across sub-menu levels
+[*] [b]data[/b] [i](table or nil)[/i] - raw context data table; fields mirror the MD param fields but as Lua values ([b]data.component[/b] and [b]data.entity[/b] are uint64 cdata; [b]data.person[/b] is the raw NPCSeed cdata, not yet resolved to an entity)
 [/list]
 The callback is called for [b]every[/b] whitelisted open across all supported menus. Filter by [b]menuName[/b] and [b]mode[/b] inside your callback as needed.
 
@@ -183,22 +171,22 @@ Entry tables mirror the MD [b]Add_Action[/b] fields, with two differences:
 [list]
 [*] Field names are plain Lua strings (no [b]$[/b] prefix)
 [*] Use [b]onClick[/b] instead of [b]callback[/b] + [b]echo[/b]
-[*] [b]type[/b] [i](string)[/i] — [b]"menuItem"[/b] (default), [b]"subMenu"[/b], [b]"separator"[/b], [b]"header"[/b]
-[*] [b]id[/b] [i](string)[/i] — [b]required[/b] for [b]menuItem[/b] and [b]subMenu[/b]; entries without [b]id[/b] are silently skipped
-[*] [b]text[/b] [i](string)[/i] — display label
-[*] [b]icon[/b] [i](string, optional)[/i] — X4 icon name; prepended to [b]text[/b]
-[*] [b]text2[/b] [i](string, optional)[/i] — right-side secondary text; [b]subMenu[/b] defaults to [b]>[/b]
-[*] [b]textColor[/b] [i](string, optional)[/i] — color key, e.g. [b]"text_positive"[/b]
-[*] [b]text2Color[/b] [i](string, optional)[/i] — color key for [b]text2[/b]
-[*] [b]mouseOver[/b] [i](string, optional)[/i] — tooltip text
-[*] [b]mouseOverIcon[/b] [i](string, optional)[/i] — icon prepended to the tooltip
-[*] [b]active[/b] [i](bool)[/i] — whether the entry is clickable; default [b]true[/b]
-[*] [b]keepOpen[/b] [i](bool, optional)[/i] — if [b]true[/b], menu stays open after click; default [b]false[/b]
-[*] [b]onClick[/b] [i](function)[/i] — called as [b]onClick(data, mode)[/b] when the entry is clicked; [b]data[/b] and [b]mode[/b] are the same values passed to the callback
+[*] [b]type[/b] [i](string)[/i] - [b]"menuItem"[/b] (default), [b]"subMenu"[/b], [b]"separator"[/b], [b]"header"[/b]
+[*] [b]id[/b] [i](string)[/i] - [b]required[/b] for [b]menuItem[/b] and [b]subMenu[/b]; entries without [b]id[/b] are silently skipped
+[*] [b]text[/b] [i](string)[/i] - display label
+[*] [b]icon[/b] [i](string, optional)[/i] - X4 icon name; prepended to [b]text[/b]
+[*] [b]text2[/b] [i](string, optional)[/i] - right-side secondary text; [b]subMenu[/b] defaults to [b]>[/b]
+[*] [b]textColor[/b] [i](string, optional)[/i] - color key, e.g. [b]"text_positive"[/b]
+[*] [b]text2Color[/b] [i](string, optional)[/i] - color key for [b]text2[/b]
+[*] [b]mouseOver[/b] [i](string, optional)[/i] - tooltip text
+[*] [b]mouseOverIcon[/b] [i](string, optional)[/i] - icon prepended to the tooltip
+[*] [b]active[/b] [i](bool)[/i] - whether the entry is clickable; default [b]true[/b]
+[*] [b]keepOpen[/b] [i](bool, optional)[/i] - if [b]true[/b], menu stays open after click; default [b]false[/b]
+[*] [b]onClick[/b] [i](function)[/i] - called as [b]onClick(data, mode)[/b] when the entry is clicked; [b]data[/b] and [b]mode[/b] are the same values passed to the callback
 [/list]
-[quote][b]Note:[/b] [b]onClick[/b] closures already capture any context the caller needs. There is no [b]echo[/b] field — closures are the Lua-native equivalent.[/quote]
+[quote][b]Note:[/b] [b]onClick[/b] closures already capture any context the caller needs. There is no [b]echo[/b] field - closures are the Lua-native equivalent.[/quote]
 
-[h2]Minimal example (Lua) — append to an existing mode[/h2]
+[h2]Minimal example (Lua) - append to an existing mode[/h2]
 
 [code]
 local cmAPI = require("extensions.context_menu_api.ui.context_menu_api")
@@ -257,43 +245,110 @@ end)
 
 The [b]< Back[/b] button is inserted automatically. Do NOT return a [b]back[/b] entry.
 
-[hr]
-
 [h2][b]Supported game Menus and Modes[/b][/h2]
 
 These are the two Menus(screens) are supported by the API: [b]MapMenu[/b] (the main map screen) and [b]PlayerInfoMenu[/b]. Each menu has a set of supported modes (context frame types).
 
-[h2]Supported modes per Menu[/h2]
+[h2]Supported modes per Menu with attached data fields[/h2]
 
 These modes use a single-column frame and are whitelisted in the API. The [b]Get_Actions[/b] event fires only for these modes. Entry injection and custom sub-menus work fully.
 
 [h3][b]MapMenu[/b][/h3]
 
-[b][b]info_context[/b][/b] — the most useful entry point. Opens when the player right-clicks a crew member, pilot, manager, or ship trader in the info panel.
-[b]event.param[/b] fields:
+When [b]mode[/b] is equal to [b]"info_context"[/b] - the most useful entry point. Opens when the player right-clicks a crew member, pilot, manager, or ship trader in the info panel.
+
+[b]On pilots/managers/traders:[/b]
 [list]
-[*] [b]$component[/b] [i](component or null)[/i] — controllable (ship or station) as MD component reference
-[*] [b]$entity[/b] [i](component or null)[/i] — pilot or manager NPC as MD component reference; null if not applicable
-[*] [b]$person[/b] [i](npctemplateentry or null)[/i] — crew NPC template entry (has [b].name[/b], [b].role.name[/b], etc.); null if not applicable
-[*] [b]$instance[/b] [i](string or null)[/i] — [b]"left"[/b] or [b]"right"[/b] for dual-panel frames; null otherwise
-[*] [b]$inv_ware[/b] [i](string or null)[/i] — ware macro string when an inventory item row was clicked
-[*] [b]$weaponmacro[/b] [i](string or null)[/i] — weapon macro string when a weapon row was clicked
-[*] [b]$equipmentmacro[/b] [i](string or null)[/i] — equipment/deploy macro string when an equipment row was clicked
-[*] [b]$software[/b] [i](string or null)[/i] — software macro string when a software row was clicked
+[*] [b]$type[/b] [i](string)[/i] - [b]"entity"[/b]
+[*] [b]$component[/b] [i](component or null)[/i] - controllable (ship or station) as MD component reference
+[*] [b]$entity[/b] [i](component or null)[/i] - pilot or manager NPC as MD component reference
+[*] [b]$instance[/b] [i](string or null)[/i] - [b]"left"[/b] or [b]"right"[/b] for dual-panel frames; null otherwise
+[*] [b]$xoffset[/b] [i](number)[/i] - mouse X offset from the default frame position;
+[*] [b]$yoffset[/b] [i](number)[/i] - mouse Y offset from the default frame position
+[/list]
+[b]On crew members and other personnel:[/b]
+[list]
+[*] [b]$type[/b] [i](string)[/i] - [b]"person"[/b]
+[*] [b]$component[/b] [i](component or null)[/i] - controllable (ship or station) as MD component reference
+[*] [b]$person[/b] [i](NPCSeed or null)[/i] - crew member as raw NPCSeed/npctemplate reference
+[*] [b]$instance[/b] [i](string or null)[/i] - [b]"left"[/b] or [b]"right"[/b] for dual-panel frames; null otherwise
+[*] [b]$xoffset[/b] [i](number)[/i] - mouse X offset from the default frame position;
+[*] [b]$yoffset[/b] [i](number)[/i] - mouse Y offset from the default frame position
+[/list]
+[b]On loadout items (Equipment)[/b]:
+[list]
+[*] or [b]$weaponmacro[/b] [i](string or null)[/i] - weapon macro string when a weapon row was clicked
+[*] or [b]$equipmentmacro[/b] [i](string or null)[/i] - equipment/deploy macro string when an equipment row was clicked
+[*] or [b]$software[/b] [i](string or null)[/i] - software macro string when a software row was clicked
+[/list]
+[b]On pilot/captain inventory items[/b]:
+[list]
+[*] [b]$inv_ware[/b] [i](string or null)[/i] - ware macro string when an inventory item row was clicked
 [/list]
 [h3][b]PlayerInfoMenu[/b][/h3]
 
-[quote][b]Note:[/b] Temporarily excluded due to technical limitations; support may be added in the near future.[/quote]
+When [b]mode[/b] is equal to [b]inventory[/b] - context actions for a selected ware in the player's inventory or spacesuit equipment.
+[list]
+[*] [b]$ware[/b] [i](string)[/i] - ware macro string of the selected item, e.g. [b]"modpart_weaponchamber_t2"[/b]
+[*] [b]$name[/b] [i](string)[/i] - localized display name of the ware, e.g. [b]"Advanced Weapon Chamber"[/b]
+[*] [b]$amount[/b] [i](number)[/i] - quantity of the ware currently held
+[*] [b]$price[/b] [i](number)[/i] - unit price in credits (may be 0 or 1 for non-tradeable items)
+[*] [b]$selectedWares[/b] [i](array)[/i] - list of ware macro strings currently selected (usually one element matching [b]$ware[/b])
+[/list]
+When [b]mode[/b] is equal to [b][b]personnel[/b][/b] - context actions for a selected crew member, pilot, manager, or trader in the personnel list.
 
-[b][b]inventory[/b][/b] — context actions for a selected ware in the player's inventory.
-[b]$data[/b]: first argument to [b]createContextFrame[/b]; contains the selected ware info (component, ware macro).
-
-[b][b]personnel[/b][/b] — context actions for a selected crew member or NPC in the personnel list.
-[b]$data[/b]: first argument to [b]createContextFrame[/b]; contains the selected person's info (container, entity/person ID, role).
-
-[b][b]transactionlog[/b][/b] — context actions for a selected transaction log entry.
-[b]$data[/b]: first argument to [b]createContextFrame[/b]; contains the transaction entry reference.
-
+[b]On pilots/managers/traders:[/b]
+[list]
+[*] [b]$type[/b] [i](string)[/i] - [b]"entity"[/b]
+[*] [b]$subMode[/b] [i](string)[/i] - personnel sub-mode, e.g. [b]"personnel_employee"[/b]
+[*] [b]$component[/b] [i](component)[/i] - controllable (ship or station) as MD component reference
+[*] [b]$container[/b] [i](number)[/i] - same UniverseID as [b]$component[/b] (raw integer before MD resolution)
+[*] [b]$containername[/b] [i](string)[/i] - display name of the ship or station
+[*] [b]$entity[/b] [i](component)[/i] - the NPC as MD component reference
+[*] [b]$name[/b] [i](string)[/i] - NPC display name
+[*] [b]$roleid[/b] [i](string)[/i] - role identifier, e.g. [b]"manager"[/b], [b]"aipilot"[/b], [b]"shiptrader"[/b]
+[*] [b]$rolename[/b] [i](string)[/i] - localised role display name, e.g. [b]"Manager"[/b], [b]"Captain"[/b], [b]"Ship trader"[/b]
+[*] [b]$combinedskill[/b] [i](number)[/i] - combined skill value (0–100)
+[*] [b]$skill[/b] [i](number)[/i] - filtered/sorted skill value (same as [b]$combinedskill[/b] when no role filter is active)
+[/list]
+[b]On crew members and other personnel:[/b]
+[list]
+[*] [b]$type[/b] [i](string)[/i] - [b]"person"[/b]
+[*] [b]$subMode[/b] [i](string)[/i] - personnel sub-mode, e.g. [b]"personnel_employee"[/b]
+[*] [b]$component[/b] [i](component)[/i] - controllable (ship or station) as MD component reference
+[*] [b]$container[/b] [i](number)[/i] - same UniverseID as [b]$component[/b] (raw integer before MD resolution)
+[*] [b]$containername[/b] [i](string)[/i] - display name of the ship or station
+[*] [b]$person[/b] [i](npctemplateentry)[/i] - crew NPC resolved from NPCSeed; access [b].name[/b], [b].role.name[/b], etc.
+[*] [b]$name[/b] [i](string)[/i] - NPC display name
+[*] [b]$roleid[/b] [i](string)[/i] - role identifier, e.g. [b]"service"[/b], [b]"marine"[/b], [b]"unassigned"[/b]
+[*] [b]$rolename[/b] [i](string)[/i] - localised role display name, e.g. [b]"Service crew"[/b]
+[*] [b]$combinedskill[/b] [i](number)[/i] - combined skill value (0–100)
+[*] [b]$skill[/b] [i](number)[/i] - filtered/sorted skill value (same as [b]$combinedskill[/b] when no role filter is active)
+[/list]
+When [b]mode[/b] is equal to [b][b]transactionlog[/b][/b] - context actions for a selected transaction log entry.
+[list]
+[*] [b]$entryid[/b] [i](number)[/i] - unique ID of the log entry
+[*] [b]$eventtype[/b] [i](string)[/i] - internal event type, e.g. [b]"orderqueue_add"[/b], [b]"orderqueue_remove"[/b]
+[*] [b]$eventtypename[/b] [i](string)[/i] - localised event type name, e.g. [b]"Trade Order"[/b], [b]"Profit from Trade Orders"[/b]
+[*] [b]$active[/b] [i](number)[/i] - [b]1[/b] if the entry is currently active
+[*] [b]$complete[/b] [i](number)[/i] - [b]1[/b] if the transaction is complete, [b]0[/b] if still pending
+[*] [b]$money[/b] [i](number)[/i] - money change for this entry in credits (negative = paid, positive = received)
+[*] [b]$amount[/b] [i](number)[/i] - ware quantity involved; [b]0[/b] for non-ware events
+[*] [b]$price[/b] [i](number)[/i] - unit price in Cr; [b]0[/b] for non-ware events
+[*] [b]$ware[/b] [i](string)[/i] - ware id string, e.g. [b]"siliconcarbide"[/b]; empty string for non-ware events
+[*] [b]$description[/b] [i](string)[/i] - human-readable summary of the transaction; empty for completed entries
+[*] [b]$partner[/b] [i](component or null)[/i] - trading partner as MD component reference
+[*] [b]$partnername[/b] [i](string)[/i] - display name of the trading partner
+[*] [b]$contextObject[/b] [i](component or null)[/i] - context object as MD component reference (often same as [b]$partner[/b])
+[*] [b]$contextObjectName[/b] [i](string)[/i] - display name of the context object
+[*] [b]$buyer[/b] [i](component or null)[/i] - buyer component; may be null when not applicable
+[*] [b]$seller[/b] [i](component or null)[/i] - seller component; may be null when not applicable
+[*] [b]$tradeentry[/b] [i](number)[/i] - trade entry reference ID; [b]0[/b] if none
+[*] [b]$tradeentrytype[/b] [i](string)[/i] - trade entry type string, e.g. [b]"trade"[/b]; empty if none
+[*] [b]$tradeentrytypename[/b] [i](string)[/i] - localised trade entry type name, e.g. [b]"Trade Payment"[/b], [b]"Unknown"[/b]
+[*] [b]$destroyedpartner[/b] [i](number)[/i] - [b]1[/b] if the partner was destroyed during the trade
+[*] [b]$time[/b] [i](number)[/i] - game time (seconds) when the entry was recorded
+[/list]
 [h2]Excluded modes[/h2]
 
 These modes currently does not supported by the API. Mostly because they are complex windows with a lot of UI elements, i.e. they are a far beyond the scope of a simple context menu.
@@ -303,79 +358,92 @@ No [b]Get_Actions[/b] event is fired for these modes; the API passes through tra
 [h3][b]MapMenu excluded modes[/b][/h3]
 
 These modes are not in the whitelist. No [b]Get_Actions[/b] event is fired; the API passes through transparently. They are documented here for reference.
-
-[b][b]neworder[/b][/b] — order selection list when assigning a new order to a ship (1-column).
-[b]$data[/b] fields: [b]$instance[/b] (string, which panel side)
-
-[b][b]set_orderparam_formationshape[/b][/b] — formation shape picker for an order parameter (1-column).
-[b]$data[/b] fields: [b]$index[/b] (number, parameter index), [b]$instance[/b] (string)
-
-[b][b]searchfield[/b][/b] — search input overlay (1-column). No meaningful data fields.
-
-[b][b]select[/b][/b] — generic single-component selection picker (1-column).
-[b]$data[/b] fields: [b]$component[/b] (string, UniverseID of the pre-selected component)
-
-[b][b]set_orderparam_sector[/b][/b] — sector picker for an order parameter (3-column table).
-[b]$data[/b] fields: [b]$index[/b] (number, parameter index in the order), [b]$instance[/b] (string)
-
-[b][b]set_orderparam_ware[/b][/b] — ware picker for an order parameter (3-column table).
-[b]$data[/b] fields: [b]$index[/b] (number, parameter index), [b]$instance[/b] (string)
-
-[b][b]orderqueuesetting[/b][/b] — order queue settings panel (2-column table). No meaningful data fields.
-
-[b][b]filter_multiselectlist[/b][/b] — multi-select filter picker inside the order queue (3-column table).
-[b]$data[/b] fields: [b]$id[/b] (string, filter setting ID), [b]$value[/b] (any scalar, current value)
-
-[b][b]trade[/b][/b] — direct trade dialog between ship and station (9-column table).
-[b]$data[/b] fields: [b]$component[/b] (string, station UniverseID), [b]$currentShip[/b] (string, ship UniverseID), [b]$shadyOnly[/b] (bool), [b]$wareexchange[/b] (bool)
-
-[b][b]tradeloop[/b][/b] — trade loop configuration (3-column table).
-[b]$data[/b] fields: [b]$component[/b] (string, station UniverseID), [b]$currentShip[/b] (string, ship UniverseID), [b]$loop[/b] (string, loop type)
-
-[b][b]mission[/b][/b] — mission briefing / accept context frame (3-column table).
-[b]$data[/b] fields: [b]$missionid[/b] (string, uint64 mission ID), [b]$isoffer[/b] (bool), [b]$name[/b] (string), [b]$type[/b] (string, main mission type), [b]$subtype[/b] (string), [b]$threadtype[/b] (string), [b]$difficulty[/b] (number), [b]$rewardmoney[/b] (number, credits × 100), [b]$rewardtext[/b] (string), [b]$timeout[/b] (number, seconds, -1 if none), [b]$abortable[/b] (bool), [b]$onlinechapter[/b] (string), [b]$onlineID[/b] (string), [b]$groupID[/b] (string)
-
-[b][b]sellships[/b][/b] — sell ships dialog at a shipyard (2-column table).
-[b]$data[/b] fields: [b]$shipyard[/b] (string, shipyard UniverseID)
-
-[b][b]dropwares[/b][/b] — drop / jettison wares from a pilot's inventory (3-column table).
-[b]$data[/b] fields: [b]$mode[/b] (string, sub-mode e.g. [b]"inventory"[/b]), [b]$entity[/b] (string, pilot UniverseID)
-
-[b][b]weaponconfig[/b][/b] — weapon loadout configuration for a ship (2-column table).
-[b]$data[/b] fields: [b]$component[/b] (string, ship UniverseID), [b]$orderidx[/b] (number), [b]$usedefault[/b] (bool), [b]$instance[/b] (string)
-
-[b][b]boardingcontext[/b][/b] — boarding operation targeting dialog (9-column table).
-[b]$data[/b] fields: [b]$target[/b] (string, target UniverseID), [b]$boarders[/b] (string, boarding ship UniverseID)
-
-[b][b]crewtransfer[/b][/b] — crew transfer between two ships (11-column table).
-[b]$data[/b] fields: [b]$leftShip[/b] (string, UniverseID), [b]$rightShip[/b] (string, UniverseID)
-
-[b][b]hire[/b][/b] — hire a crew member or captain (2-column table).
-[b]$data[/b] fields: [b]$hireObject[/b] (string, UniverseID of the object being hired for)
-
-[b][b]rename[/b][/b] — rename a ship, station, or fleet (2-column table).
-[b]$data[/b] fields: [b]$component[/b] (string, UniverseID), [b]$fleetrename[/b] (bool, true when renaming a fleet)
-
-[b][b]changelogo[/b][/b] — change hull decal / logo on a ship or station (5-column table).
-[b]$data[/b] fields: [b]$component[/b] (string, UniverseID)
-
-[b][b]userquestion[/b][/b] — yes/no confirmation dialog; used for many different actions (5-7 columns depending on sub-mode). The [b]$mode[/b] field indicates which question is being asked:
-[list][*] [b]$mode = "discardplanneddefaultbehaviour"[/b] — discard planned order
-[*] [b]$mode = "removeplot"[/b] — destroy build plot; also has [b]$station[/b] (string, UniverseID)
-[*] [b]$mode = "clearlogbook"[/b] — clear logbook entries; also has [b]$instance[/b] (string)
-[*] [b]$mode = "markashostile"[/b] — mark target as hostile; also has [b]$controllable[/b] (string, UniverseID)
-[*] [b]$mode = "removebuildstorage"[/b] — remove build storage; also has [b]$buildstorage[/b] (string, UniverseID)
-[*] [b]$mode = "fireindividual"[/b] — fire a specific crew member; also has [b]$controllable[/b] (string), [b]$entity[/b] (string), [b]$person[/b] (string), [b]$instance[/b] (string)
-[*] [b]$mode = "fireall"[/b] — fire all crew; also has [b]$controllable[/b] (string, UniverseID), [b]$instance[/b] (string)
+[list]
+[*] [b][b]neworder[/b][/b] - order selection list when assigning a new order to a ship (1-column).
 [/list]
-[b][b]userquestion_multiverse[/b][/b] — multiverse-specific yes/no confirmation. No meaningful data fields.
-
+  possible additional fields: [b]$instance[/b] (string, which panel side)
+[list]
+[*] [b][b]set_orderparam_formationshape[/b][/b] - formation shape picker for an order parameter (1-column).
+[/list]
+  possible additional fields: [b]$index[/b] (number, parameter index), [b]$instance[/b] (string)
+[list]
+[*] [b][b]searchfield[/b][/b] - search input overlay (1-column). No meaningful data fields.
+[*] [b][b]select[/b][/b] - generic single-component selection picker (1-column).
+[/list]
+  possible additional fields: [b]$component[/b] (string, UniverseID of the pre-selected component)
+[list]
+[*] [b][b]set_orderparam_sector[/b][/b] - sector picker for an order parameter (3-column table).
+[/list]
+  possible additional fields: [b]$index[/b] (number, parameter index in the order), [b]$instance[/b] (string)
+[list]
+[*] [b][b]set_orderparam_ware[/b][/b] - ware picker for an order parameter (3-column table).
+[/list]
+  possible additional fields: [b]$index[/b] (number, parameter index), [b]$instance[/b] (string)
+[list]
+[*] [b][b]orderqueuesetting[/b][/b] - order queue settings panel (2-column table). No meaningful data fields.
+[*] [b][b]filter_multiselectlist[/b][/b] - multi-select filter picker inside the order queue (3-column table).
+[/list]
+  possible additional fields: [b]$id[/b] (string, filter setting ID), [b]$value[/b] (any scalar, current value)
+[list]
+[*] [b][b]trade[/b][/b] - direct trade dialog between ship and station (9-column table).
+[/list]
+  possible additional fields: [b]$component[/b] (string, station UniverseID), [b]$currentShip[/b] (string, ship UniverseID), [b]$shadyOnly[/b] (bool), [b]$wareexchange[/b] (bool)
+[list]
+[*] [b][b]tradeloop[/b][/b] - trade loop configuration (3-column table).
+[/list]
+  possible additional fields: [b]$component[/b] (string, station UniverseID), [b]$currentShip[/b] (string, ship UniverseID), [b]$loop[/b] (string, loop type)
+[list]
+[*] [b][b]mission[/b][/b] - mission briefing / accept context frame (3-column table).
+[/list]
+  possible additional fields: [b]$missionid[/b] (string, uint64 mission ID), [b]$isoffer[/b] (bool), [b]$name[/b] (string), [b]$type[/b] (string, main mission type), [b]$subtype[/b] (string), [b]$threadtype[/b] (string), [b]$difficulty[/b] (number), [b]$rewardmoney[/b] (number, credits × 100), [b]$rewardtext[/b] (string), [b]$timeout[/b] (number, seconds, -1 if none), [b]$abortable[/b] (bool), [b]$onlinechapter[/b] (string), [b]$onlineID[/b] (string), [b]$groupID[/b] (string)
+[list]
+[*] [b][b]sellships[/b][/b] - sell ships dialog at a shipyard (2-column table).
+[/list]
+  possible additional fields: [b]$shipyard[/b] (string, shipyard UniverseID)
+[list]
+[*] [b][b]dropwares[/b][/b] - drop / jettison wares from a pilot's inventory (3-column table).
+[/list]
+  possible additional fields: [b]$mode[/b] (string, sub-mode e.g. [b]"inventory"[/b]), [b]$entity[/b] (string, pilot UniverseID)
+[list]
+[*] [b][b]weaponconfig[/b][/b] - weapon loadout configuration for a ship (2-column table).
+[/list]
+  possible additional fields: [b]$component[/b] (string, ship UniverseID), [b]$orderidx[/b] (number), [b]$usedefault[/b] (bool), [b]$instance[/b] (string)
+[list]
+[*] [b][b]boardingcontext[/b][/b] - boarding operation targeting dialog (9-column table).
+[/list]
+  possible additional fields: [b]$target[/b] (string, target UniverseID), [b]$boarders[/b] (string, boarding ship UniverseID)
+[list]
+[*] [b][b]crewtransfer[/b][/b] - crew transfer between two ships (11-column table).
+[/list]
+  possible additional fields: [b]$leftShip[/b] (string, UniverseID), [b]$rightShip[/b] (string, UniverseID)
+[list]
+[*] [b][b]hire[/b][/b] - hire a crew member or captain (2-column table).
+[/list]
+  possible additional fields: [b]$hireObject[/b] (string, UniverseID of the object being hired for)
+[list]
+[*] [b][b]rename[/b][/b] - rename a ship, station, or fleet (2-column table).
+[/list]
+  possible additional fields: [b]$component[/b] (string, UniverseID), [b]$fleetrename[/b] (bool, true when renaming a fleet)
+[list]
+[*] [b][b]changelogo[/b][/b] - change hull decal / logo on a ship or station (5-column table).
+[/list]
+  possible additional fields: [b]$component[/b] (string, UniverseID)
+[list]
+[*] [b][b]userquestion[/b][/b] - yes/no confirmation dialog; used for many different actions (5-7 columns depending on sub-mode). The [b]$mode[/b] field indicates which question is being asked:
+[*] [b]$mode = "discardplanneddefaultbehaviour"[/b] - discard planned order
+[*] [b]$mode = "removeplot"[/b] - destroy build plot; also has [b]$station[/b] (string, UniverseID)
+[*] [b]$mode = "clearlogbook"[/b] - clear logbook entries; also has [b]$instance[/b] (string)
+[*] [b]$mode = "markashostile"[/b] - mark target as hostile; also has [b]$controllable[/b] (string, UniverseID)
+[*] [b]$mode = "removebuildstorage"[/b] - remove build storage; also has [b]$buildstorage[/b] (string, UniverseID)
+[*] [b]$mode = "fireindividual"[/b] - fire a specific crew member; also has [b]$controllable[/b] (string), [b]$entity[/b] (string), [b]$person[/b] (string), [b]$instance[/b] (string)
+[*] [b]$mode = "fireall"[/b] - fire all crew; also has [b]$controllable[/b] (string, UniverseID), [b]$instance[/b] (string)
+[*] [b][b]userquestion_multiverse[/b][/b] - multiverse-specific yes/no confirmation. No meaningful data fields.
+[/list]
 [quote][b]Note:[/b] Venture and multiplayer modes ([b]onlinemode[/b], [b]onlinereward[/b], [b]ventureconfig[/b], [b]venturecreateparty[/b], [b]venturepatron[/b], [b]venturereport[/b], [b]ventureteammembercontext[/b], [b]venturecontactcontext[/b], [b]venturefriendlist[/b], [b]ventureoutcome[/b], [b]ventureshipselection[/b]) are not accessible when the game is modded and are listed here for completeness only.[/quote]
 
 [h2]PlayerInfoMenu excluded modes[/h2]
-
-[b][b]dropwares[/b][/b] — drop / jettison wares from a pilot's inventory (3-column table via [b]Helper.createDropWaresContext[/b]).
-
+[list]
+[*] [b][b]dropwares[/b][/b] - drop / jettison wares from a pilot's inventory (3-column table via [b]Helper.createDropWaresContext[/b]).
+[/list]
 [quote][b]Note:[/b] Venture modes ([b]venturecontactcontext[/b], [b]venturefriendlist[/b], [b]venturereport[/b]) are not accessible when the game is modded.[/quote]
 
-[hr]
